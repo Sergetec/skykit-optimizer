@@ -48,7 +48,7 @@ export async function startEvalPlatform(): Promise<void> {
 
     evalProcess = spawn(command, args, {
       cwd: platformPath,
-      shell: isWindows,
+      shell: true,
       stdio: ['pipe', 'pipe', 'pipe']
     });
 
