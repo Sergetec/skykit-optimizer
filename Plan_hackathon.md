@@ -7,6 +7,28 @@
 
 ---
 
+## 📊 PROGRES CURENT (Actualizat: 5 Decembrie 2025)
+
+| Fază | Status | Detalii |
+|------|--------|---------|
+| **FAZA 1** | ✅ DONE | Setup complet (Windows + Ubuntu cross-platform) |
+| **FAZA 2** | ✅ DONE | Core Engine implementat (`types`, `api`, `data`, `engine`) |
+| **FAZA 3** | 🔄 ~70% | Algoritm basic greedy + cumpărare - rămâne optimizare avansată |
+| **FAZA 4** | ⏳ TODO | Frontend WOW |
+| **FAZA 5** | ⏳ TODO | Pregătire Battle & Prezentare |
+
+### Fișiere implementate:
+```
+src/
+├── types/index.ts     ✅ Tipuri TypeScript complete
+├── api/client.ts      ✅ API client cu startSession, playRound, endSession
+├── data/loader.ts     ✅ Data loader cross-platform (Windows + Ubuntu)
+├── engine/state.ts    ✅ GameState complet cu tracking inventar/kit-uri
+└── index.ts           ✅ Game loop principal (720 runde)
+```
+
+---
+
 ## 🤖 TL;DR PENTRU CLAUDE (CITEȘTE ASTA PRIMUL!)
 
 ### Ce trebuie să faci:
@@ -58,24 +80,29 @@ c:\Users\serge\Desktop\meditatii\HackitAll2025\eval-platform\src\main\resources\
 
 ## 📁 PATHS ȘI LOCAȚII
 
+> **⚠️ Cross-Platform:** Proiectul suportă atât Windows cât și Ubuntu. Path-urile sunt detectate automat în `src/data/loader.ts`.
+
 ### Repository Clonat
-```
-c:\Users\serge\Desktop\meditatii\HackitAll2025\
-```
+| OS | Path |
+|----|------|
+| **Windows** | `C:\Users\serge\Desktop\HackitAll2025\` |
+| **Ubuntu** | `~/repos/HackitAll2025/` |
 
 ### Platforma de Evaluare (Java)
-```
-c:\Users\serge\Desktop\meditatii\HackitAll2025\eval-platform\
-```
+| OS | Path |
+|----|------|
+| **Windows** | `C:\Users\serge\Desktop\HackitAll2025\eval-platform\` |
+| **Ubuntu** | `~/repos/HackitAll2025/eval-platform/` |
 
 ### Fișiere CSV cu Date
-```
-c:\Users\serge\Desktop\meditatii\HackitAll2025\eval-platform\src\main\resources\liquibase\data\
-```
+| OS | Path |
+|----|------|
+| **Windows** | `C:\Users\serge\Desktop\HackitAll2025\eval-platform\src\main\resources\liquibase\data\` |
+| **Ubuntu** | `~/repos/HackitAll2025/eval-platform/src/main/resources/liquibase/data/` |
 
-### Proiectul Nostru (de creat)
+### Proiectul Nostru
 ```
-c:\Users\serge\Desktop\meditatii\skykit-optimizer\
+c:\Users\serge\Desktop\skykit-optimizer\
 ```
 
 ### Swagger UI (când platforma rulează)
@@ -646,86 +673,87 @@ function calculatePurchaseOrder(
 ### FAZA 1: Setup & Foundation
 
 #### Task 1.1: Setup Mediu
-- [ ] Clonare repo evaluare: `git clone https://github.com/pradu3/HackitAll2025`
-- [ ] Instalare Java JDK 25, Maven
-- [ ] Rulare platformă local: `cd eval-platform && mvn spring-boot:run`
-- [ ] Verificare Swagger UI: `http://127.0.0.1:8080/swagger-ui/index.html`
-- [ ] Test manual API cu Postman/Bruno (start session, play round, end)
+- [x] ✅ DONE - Clonare repo evaluare: `git clone https://github.com/pradu3/HackitAll2025`
+- [x] ✅ DONE - Instalare Java JDK 25, Maven
+- [x] ✅ DONE - Rulare platformă local: `cd eval-platform && mvn spring-boot:run`
+- [x] ✅ DONE - Verificare Swagger UI: `http://127.0.0.1:8080/swagger-ui/index.html`
+- [x] ✅ DONE - Test manual API cu Postman/Bruno (start session, play round, end)
 
-#### Task 1.2: Setup Proiect TypeScript
-- [ ] `mkdir skykit-optimizer && cd skykit-optimizer`
-- [ ] `npm init -y`
-- [ ] `npm install typescript ts-node @types/node axios csv-parse`
-- [ ] Setup `tsconfig.json`
-- [ ] Structură foldere: `src/`, `src/api/`, `src/data/`, `src/engine/`, `src/optimizer/`
+#### Task 1.2: Setup Proiect TypeScript ✅ DONE
+- [x] ✅ DONE - `mkdir skykit-optimizer && cd skykit-optimizer`
+- [x] ✅ DONE - `npm init -y`
+- [x] ✅ DONE - `npm install typescript ts-node @types/node axios csv-parse`
+- [x] ✅ DONE - Setup `tsconfig.json`
+- [x] ✅ DONE - Structură foldere: `src/`, `src/api/`, `src/data/`, `src/engine/`, `src/optimizer/`
 
-#### Task 1.3: Înțelegere Date CSV
-- [ ] Analiză `flight_plan.csv` - structură zboruri
-- [ ] Analiză `aircraft_types.csv` - capacități avioane
-- [ ] Analiză `airports.csv` sau similar - stocuri și costuri
-- [ ] Documentare modele de date necesare
-
----
-
-### FAZA 2: Core Engine
-
-#### Task 2.1: API Client
-- [ ] Implementare `src/api/client.ts`
-- [ ] Funcții: `startSession()`, `playRound()`, `endSession()`
-- [ ] Handling erori HTTP și validare răspunsuri
-- [ ] Logging pentru debugging
-
-#### Task 2.2: Data Loader
-- [ ] Implementare `src/data/loader.ts`
-- [ ] Parsare CSV-uri în structuri TypeScript
-- [ ] Validare date încărcate
-- [ ] Export funcții: `loadFlights()`, `loadAircraft()`, `loadAirports()`
-
-#### Task 2.3: Type Definitions
-- [ ] Implementare `src/types/index.ts`
-- [ ] Interfețe pentru: Flight, Aircraft, Airport, Kit, FlightLoad
-- [ ] Enums pentru: KitClass, FlightStatus
-
-#### Task 2.4: Game State Manager
-- [ ] Implementare `src/engine/state.ts`
-- [ ] Tracking inventar per aeroport (stoc curent)
-- [ ] Tracking kit-uri în procesare (cu timestamp)
-- [ ] Tracking kit-uri în zbor
-- [ ] Update stare la fiecare eveniment
-
-#### Task 2.5: Event Processor
-- [ ] Implementare `src/engine/events.ts`
-- [ ] Procesare SCHEDULED → pregătire pentru zbor
-- [ ] Procesare CHECKED_IN → pasageri reali cunoscuți
-- [ ] Procesare LANDED → kit-uri ajung la destinație
-
-#### Task 2.6: Game Loop
-- [ ] Implementare `src/engine/game.ts`
-- [ ] Loop principal: 720 runde
-- [ ] Orchestrare: primește evenimente → decide → trimite comenzi
-- [ ] Logging scor și costuri per rundă
+#### Task 1.3: Înțelegere Date CSV ✅ DONE
+- [x] ✅ DONE - Analiză `flight_plan.csv` - structură zboruri
+- [x] ✅ DONE - Analiză `aircraft_types.csv` - capacități avioane
+- [x] ✅ DONE - Analiză `airports.csv` sau similar - stocuri și costuri
+- [x] ✅ DONE - Documentare modele de date necesare
 
 ---
 
-### FAZA 3: Algoritm Optimizare (CRITICĂ)
+### FAZA 2: Core Engine ✅ DONE
 
-#### Task 3.1: Algoritm Basic - Greedy
-- [ ] Implementare `src/optimizer/strategy.ts`
-- [ ] Pentru fiecare zbor: încarcă exact câți pasageri sunt
-- [ ] Respectă constrângeri: stoc disponibil, capacitate avion
-- [ ] **Obiectiv:** Funcționează fără penalități majore
+#### Task 2.1: API Client ✅ DONE
+- [x] ✅ DONE - Implementare `src/api/client.ts`
+- [x] ✅ DONE - Funcții: `startSession()`, `playRound()`, `endSession()`
+- [x] ✅ DONE - Handling erori HTTP și validare răspunsuri
+- [x] ✅ DONE - Logging pentru debugging
 
-#### Task 3.2: Strategie Cumpărare Kit-uri
-- [ ] Implementare `src/optimizer/purchasing.ts`
-- [ ] Prognozare cerere viitoare (24-48h)
-- [ ] Calculare deficit și comandare la Hub
-- [ ] Buffer de siguranță configurabil
+#### Task 2.2: Data Loader ✅ DONE
+- [x] ✅ DONE - Implementare `src/data/loader.ts`
+- [x] ✅ DONE - Parsare CSV-uri în structuri TypeScript
+- [x] ✅ DONE - Validare date încărcate
+- [x] ✅ DONE - Export funcții: `loadFlights()`, `loadAircraft()`, `loadAirports()`
+- [x] ✅ DONE - **Cross-platform paths** (Windows + Ubuntu) detectate automat
 
-#### Task 3.3: Predicție Cerere
-- [ ] Implementare `src/optimizer/forecaster.ts`
-- [ ] Analiză pattern zboruri (frecvență, capacitate)
-- [ ] Estimare pasageri per clasă
-- [ ] Ajustare după CHECKED_IN vs SCHEDULED
+#### Task 2.3: Type Definitions ✅ DONE
+- [x] ✅ DONE - Implementare `src/types/index.ts`
+- [x] ✅ DONE - Interfețe pentru: Flight, Aircraft, Airport, Kit, FlightLoad
+- [x] ✅ DONE - Enums pentru: KitClass, FlightStatus
+
+#### Task 2.4: Game State Manager ✅ DONE
+- [x] ✅ DONE - Implementare `src/engine/state.ts`
+- [x] ✅ DONE - Tracking inventar per aeroport (stoc curent)
+- [x] ✅ DONE - Tracking kit-uri în procesare (cu timestamp)
+- [x] ✅ DONE - Tracking kit-uri în zbor
+- [x] ✅ DONE - Update stare la fiecare eveniment
+
+#### Task 2.5: Event Processor ✅ DONE
+- [x] ✅ DONE - ~~Implementare `src/engine/events.ts`~~ (integrat în `state.ts`)
+- [x] ✅ DONE - Procesare SCHEDULED → pregătire pentru zbor
+- [x] ✅ DONE - Procesare CHECKED_IN → pasageri reali cunoscuți
+- [x] ✅ DONE - Procesare LANDED → kit-uri ajung la destinație
+
+#### Task 2.6: Game Loop ✅ DONE
+- [x] ✅ DONE - Implementare `src/index.ts` (entry point principal)
+- [x] ✅ DONE - Loop principal: 720 runde
+- [x] ✅ DONE - Orchestrare: primește evenimente → decide → trimite comenzi
+- [x] ✅ DONE - Logging scor și costuri per rundă
+
+---
+
+### FAZA 3: Algoritm Optimizare (CRITICĂ) - Parțial Done
+
+#### Task 3.1: Algoritm Basic - Greedy ✅ DONE
+- [x] ✅ DONE - Implementare în `src/engine/state.ts` → `calculateFlightLoads()`
+- [x] ✅ DONE - Pentru fiecare zbor: încarcă exact câți pasageri sunt
+- [x] ✅ DONE - Respectă constrângeri: stoc disponibil, capacitate avion
+- [x] ✅ DONE - **Obiectiv:** Funcționează fără penalități majore
+
+#### Task 3.2: Strategie Cumpărare Kit-uri ✅ DONE
+- [x] ✅ DONE - Implementare în `src/engine/state.ts` → `calculatePurchaseOrder()`
+- [x] ✅ DONE - Prognozare cerere viitoare (48h) → `calculateUpcomingDemand()`
+- [x] ✅ DONE - Calculare deficit și comandare la Hub
+- [x] ✅ DONE - Buffer de siguranță configurabil (1.5x demand, max 80% capacity)
+
+#### Task 3.3: Predicție Cerere ✅ DONE
+- [x] ✅ DONE - Implementare în `src/engine/state.ts` → `calculateUpcomingDemand()`, `getExpectedStock()`
+- [x] ✅ DONE - Analiză pattern zboruri (frecvență, capacitate)
+- [x] ✅ DONE - Estimare pasageri per clasă
+- [x] ✅ DONE - Tracking kit-uri în zbor și în procesare
 
 #### Task 3.4: Optimizare Avansată
 - [ ] Balansare inventar între aeroporturi via zboruri de retur
@@ -782,15 +810,15 @@ function calculatePurchaseOrder(
 
 ### Checkpoints Importante
 
-| Checkpoint | Descriere | Criterii de succes |
-|------------|-----------|-------------------|
-| **CP1** | Setup complet | Platforma rulează, API funcționează |
-| **CP2** | Prima rundă | Putem trimite un playRound și primim răspuns |
-| **CP3** | Game loop complet | 720 runde fără crash |
-| **CP4** | Scor de referință | Prima rulare cu algoritm basic |
-| **CP5** | Algoritm optimizat | Scor îmbunătățit semnificativ |
-| **CP6** | Frontend funcțional | Dashboard vizibil cu date reale |
-| **CP7** | Battle ready | Aplicația e gata pentru cloud |
+| Checkpoint | Descriere | Criterii de succes | Status |
+|------------|-----------|-------------------|--------|
+| **CP1** | Setup complet | Platforma rulează, API funcționează | ✅ DONE |
+| **CP2** | Prima rundă | Putem trimite un playRound și primim răspuns | ✅ DONE |
+| **CP3** | Game loop complet | 720 runde fără crash | ✅ DONE |
+| **CP4** | Scor de referință | Prima rulare cu algoritm basic | ✅ DONE |
+| **CP5** | Algoritm optimizat | Scor îmbunătățit semnificativ | 🔄 IN PROGRESS |
+| **CP6** | Frontend funcțional | Dashboard vizibil cu date reale | ⏳ TODO |
+| **CP7** | Battle ready | Aplicația e gata pentru cloud | ⏳ TODO |
 
 ---
 
@@ -798,10 +826,11 @@ function calculatePurchaseOrder(
 
 **IMPORTANT:** Implementează EXACT în această ordine. NU sări pași. Fiecare pas depinde de anteriorul.
 
-### PASUL 1: Verificare Platformă Evaluare
+### ✅ PASUL 1: Verificare Platformă Evaluare - DONE
 ```bash
 # Navighează la platforma de evaluare
-cd c:\Users\serge\Desktop\meditatii\HackitAll2025\eval-platform
+# Windows: cd C:\Users\serge\Desktop\HackitAll2025\eval-platform
+# Ubuntu:  cd ~/repos/HackitAll2025/eval-platform
 
 # Verifică că Java e instalat
 java --version
@@ -814,54 +843,43 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 # Trebuie să vezi interfața Swagger
 ```
 
-### PASUL 2: Creare Proiect TypeScript
+### ✅ PASUL 2: Creare Proiect TypeScript - DONE
 ```bash
-# Creează și navighează în folder
-mkdir c:\Users\serge\Desktop\meditatii\skykit-optimizer
-cd c:\Users\serge\Desktop\meditatii\skykit-optimizer
-
-# Creează package.json (copiază din secțiunea FIȘIERE DE CONFIGURARE)
-# Creează tsconfig.json (copiază din secțiunea FIȘIERE DE CONFIGURARE)
-
-# Instalează dependențe
-npm install
-
-# Creează structura de foldere
-mkdir src src\api src\data src\engine src\optimizer src\types
+# Proiectul există la: c:\Users\serge\Desktop\skykit-optimizer
 ```
 
-### PASUL 3: Creează `src/types/index.ts`
+### ✅ PASUL 3: Creează `src/types/index.ts` - DONE
 Acest fișier TREBUIE creat PRIMUL deoarece toate celelalte fișiere îl importă.
 
-### PASUL 4: Creează `src/api/client.ts`
+### ✅ PASUL 4: Creează `src/api/client.ts` - DONE
 API client pentru comunicare cu platforma de evaluare.
 
-### PASUL 5: Creează `src/data/loader.ts`
-Parser pentru fișierele CSV.
+### ✅ PASUL 5: Creează `src/data/loader.ts` - DONE
+Parser pentru fișierele CSV. **Include cross-platform path detection (Windows + Ubuntu).**
 
-### PASUL 6: Creează `src/engine/state.ts`
+### ✅ PASUL 6: Creează `src/engine/state.ts` - DONE
 Manager pentru starea jocului (inventar, zboruri în aer).
 
-### PASUL 7: Creează `src/engine/events.ts`
+### ✅ PASUL 7: ~~Creează `src/engine/events.ts`~~ - DONE (integrat în state.ts)
 Processor pentru evenimentele primite (SCHEDULED, CHECKED_IN, LANDED).
 
-### PASUL 8: Creează `src/optimizer/strategy.ts`
-Algoritmul de decizie pentru încărcare kit-uri.
+### ✅ PASUL 8: ~~Creează `src/optimizer/strategy.ts`~~ - DONE (integrat în state.ts)
+Algoritmul de decizie pentru încărcare kit-uri → `calculateFlightLoads()`, `calculatePurchaseOrder()`
 
-### PASUL 9: Creează `src/engine/game.ts`
+### ✅ PASUL 9: ~~Creează `src/engine/game.ts`~~ - DONE (integrat în index.ts)
 Loop-ul principal al jocului (720 runde).
 
-### PASUL 10: Creează `src/index.ts`
+### ✅ PASUL 10: Creează `src/index.ts` - DONE
 Entry point care leagă totul.
 
-### PASUL 11: Test și Debug
+### 🔄 PASUL 11: Test și Debug - IN PROGRESS
 ```bash
 npm run dev
 # Verifică că rulează fără erori
 # Verifică scorul la final
 ```
 
-### PASUL 12: Optimizare
+### ⏳ PASUL 12: Optimizare - TODO
 Îmbunătățește algoritmul pe baza penalităților primite.
 
 ---

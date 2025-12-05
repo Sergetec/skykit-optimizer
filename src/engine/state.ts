@@ -3,6 +3,7 @@ import {
   FlightEvent,
   Airport,
   Aircraft,
+  FlightPlan,
   KIT_CLASSES,
   FlightLoadDto,
   copyPerClass
@@ -39,6 +40,9 @@ export class GameState {
   // Airport data
   airports: Map<string, Airport>;
 
+  // Static flight plan for demand forecasting
+  flightPlans: FlightPlan[];
+
   // Known flights (from SCHEDULED/CHECKED_IN events)
   knownFlights: Map<string, FlightEvent> = new Map();
 
@@ -54,11 +58,13 @@ export class GameState {
   constructor(
     initialStocks: Map<string, PerClassAmount>,
     aircraftTypes: Map<string, Aircraft>,
-    airports: Map<string, Airport>
+    airports: Map<string, Airport>,
+    flightPlans: FlightPlan[]
   ) {
     this.airportStocks = initialStocks;
     this.aircraftTypes = aircraftTypes;
     this.airports = airports;
+    this.flightPlans = flightPlans;
   }
 
   // Update time and find flights departing NOW
@@ -191,9 +197,17 @@ export class GameState {
   calculateFlightLoads(): FlightLoadDto[] {
     const loads: FlightLoadDto[] = [];
 
-    // Sort flights by some priority (e.g., by demand or distance)
-    // For now, process in order received
-    for (const flight of this.flightsReadyToDepart) {
+    // Sort flights by priority: longer distance = higher penalty if unfulfilled
+    // UNFULFILLED_KIT_FACTOR_PER_DISTANCE = 0.003, so distance matters
+    const sortedFlights = [...this.flightsReadyToDepart].sort((a, b) => {
+      // Get distance from flight plan for priority
+      const distA = this.getFlightDistance(a.originAirport, a.destinationAirport);
+      const distB = this.getFlightDistance(b.originAirport, b.destinationAirport);
+      // Higher distance = higher priority (sort descending)
+      return distB - distA;
+    });
+
+    for (const flight of sortedFlights) {
       const originStock = this.airportStocks.get(flight.originAirport);
       const aircraft = this.aircraftTypes.get(flight.aircraftType);
 
@@ -239,6 +253,16 @@ export class GameState {
     }
 
     return loads;
+  }
+
+  // Get distance for a route from flight plan
+  private getFlightDistance(origin: string, destination: string): number {
+    for (const plan of this.flightPlans) {
+      if (plan.departCode === origin && plan.arrivalCode === destination) {
+        return plan.distanceKm;
+      }
+    }
+    return 0; // Unknown route
   }
 
   // Get stock at an airport
@@ -293,11 +317,20 @@ export class GameState {
     const hub = this.airports.get('HUB1');
     if (!hub) return undefined;
 
-    // Get expected stock including incoming kits
-    const expectedStock = this.getExpectedStock('HUB1', 12);
+    // Get expected stock including incoming kits (within 6 hours - shorter window)
+    const expectedStock = this.getExpectedStock('HUB1', 6);
 
-    // Calculate demand from upcoming flights (next 48 hours)
-    const upcomingDemand = this.calculateUpcomingDemand('HUB1', 48);
+    // Calculate demand from BOTH known flights AND flight plan schedule
+    const knownDemand = this.calculateUpcomingDemand('HUB1', 72);
+    const scheduledDemand = this.calculateScheduledDemand('HUB1', 72);
+
+    // Use the higher of known vs scheduled (scheduled is more complete early in game)
+    const demand: PerClassAmount = {
+      first: Math.max(knownDemand.first, scheduledDemand.first),
+      business: Math.max(knownDemand.business, scheduledDemand.business),
+      premiumEconomy: Math.max(knownDemand.premiumEconomy, scheduledDemand.premiumEconomy),
+      economy: Math.max(knownDemand.economy, scheduledDemand.economy)
+    };
 
     const order: PerClassAmount = {
       first: 0,
@@ -308,11 +341,12 @@ export class GameState {
 
     for (const kitClass of KIT_CLASSES) {
       const current = expectedStock[kitClass];
-      const demand = upcomingDemand[kitClass];
+      const kitDemand = demand[kitClass];
       const capacity = hub.capacity[kitClass];
 
-      // Target: have enough for demand plus 50% buffer, up to capacity
-      const target = Math.min(demand * 1.5, capacity * 0.8);
+      // MORE AGGRESSIVE: Target 200% of demand to ensure sufficient buffer
+      // Also target higher capacity utilization (90% instead of 80%)
+      const target = Math.min(kitDemand * 2.0, capacity * 0.9);
       const deficit = target - current;
 
       if (deficit > 0) {
@@ -325,6 +359,43 @@ export class GameState {
 
     const totalOrder = order.first + order.business + order.premiumEconomy + order.economy;
     return totalOrder > 0 ? order : undefined;
+  }
+
+  // Calculate demand from static flight plan (for forecasting before SCHEDULED events arrive)
+  private calculateScheduledDemand(airportCode: string, withinHours: number): PerClassAmount {
+    const demand: PerClassAmount = { first: 0, business: 0, premiumEconomy: 0, economy: 0 };
+
+    // Calculate the time window
+    let checkHour = this.currentHour;
+    let checkDay = this.currentDay;
+
+    for (let h = 0; h < withinHours; h++) {
+      // Get weekday (0 = Monday, 6 = Sunday) for the check day
+      // Day 0 in game = some weekday, we need to figure out the pattern
+      const weekdayIndex = checkDay % 7;
+
+      for (const plan of this.flightPlans) {
+        if (plan.departCode === airportCode &&
+            plan.scheduledHour === checkHour &&
+            plan.weekdays[weekdayIndex]) {
+          // This flight is scheduled to depart at this time
+          // Estimate passengers based on typical aircraft capacity
+          // Use average aircraft capacity as estimate (we don't know exact aircraft yet)
+          demand.first += 10;      // Avg first class
+          demand.business += 50;   // Avg business
+          demand.premiumEconomy += 25;  // Avg premium economy
+          demand.economy += 250;   // Avg economy
+        }
+      }
+
+      checkHour++;
+      if (checkHour >= 24) {
+        checkHour = 0;
+        checkDay++;
+      }
+    }
+
+    return demand;
   }
 
   // Calculate upcoming demand for an airport within the given hours

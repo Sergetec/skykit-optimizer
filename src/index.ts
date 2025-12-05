@@ -1,6 +1,6 @@
 import { ApiClient } from './api/client';
 import { HourRequestDto, HourResponseDto } from './types';
-import { loadAircraftTypes, loadAirports, getInitialStocks } from './data/loader';
+import { loadAircraftTypes, loadAirports, getInitialStocks, loadFlightPlan } from './data/loader';
 import { GameState } from './engine/state';
 
 const TOTAL_DAYS = 30;
@@ -17,9 +17,10 @@ async function main() {
   const aircraftTypes = loadAircraftTypes();
   const airports = loadAirports();
   const initialStocks = getInitialStocks(airports);
+  const flightPlans = loadFlightPlan();
 
-  // Initialize game state
-  const gameState = new GameState(initialStocks, aircraftTypes, airports);
+  // Initialize game state with flight plan for demand forecasting
+  const gameState = new GameState(initialStocks, aircraftTypes, airports, flightPlans);
 
   // Initialize API client
   const client = new ApiClient();
