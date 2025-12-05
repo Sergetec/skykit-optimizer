@@ -13,6 +13,7 @@ import {
   addPenalty,
   clearState
 } from './server';
+import { startEvalPlatform, stopEvalPlatform } from './evalPlatform';
 
 const TOTAL_DAYS = 30;
 const HOURS_PER_DAY = 24;
@@ -27,6 +28,20 @@ async function runGame() {
   console.log('       SkyKit Optimizer v1.0');
   console.log('   SAP Hackathon - Rotables Optimization');
   console.log('===========================================\n');
+
+  // Step 1: Start eval platform
+  addEvent({ type: 'flight', text: 'Starting eval platform...', timestamp: new Date().toISOString() });
+
+  try {
+    await startEvalPlatform();
+    addEvent({ type: 'flight', text: 'Eval platform started!', timestamp: new Date().toISOString() });
+  } catch (err) {
+    addEvent({ type: 'warning', text: `Failed to start eval platform: ${err}`, timestamp: new Date().toISOString() });
+    throw err;
+  }
+
+  // Small delay to ensure platform is fully ready
+  await new Promise(resolve => setTimeout(resolve, 2000));
 
   // Get fresh initial stocks for this run
   const initialStocks = getInitialStocks(airports);
@@ -183,6 +198,15 @@ async function runGame() {
       text: `Game error: ${error}`,
       timestamp: new Date().toISOString()
     });
+  } finally {
+    // Step 3: Stop eval platform (so it's ready for next run)
+    console.log('\n[EVAL] Stopping eval platform for next run...');
+    addEvent({ type: 'flight', text: 'Stopping eval platform...', timestamp: new Date().toISOString() });
+    await stopEvalPlatform();
+    addEvent({ type: 'flight', text: 'Eval platform stopped. Ready for next simulation!', timestamp: new Date().toISOString() });
+
+    // Reset game complete flag so we can start again
+    setGameComplete(false);
   }
 }
 
@@ -204,6 +228,7 @@ async function main() {
   await startServer();
 
   console.log('\n[SERVER] Ready! Use the frontend button or POST /api/game/start to begin simulation.');
+  console.log('[SERVER] The eval platform will be started/stopped automatically.');
   console.log('[SERVER] Press Ctrl+C to exit.\n');
 }
 
