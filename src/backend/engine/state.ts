@@ -197,6 +197,10 @@ export class GameState {
   calculateFlightLoads(): FlightLoadDto[] {
     const loads: FlightLoadDto[] = [];
 
+    // END-GAME MODE: Day 28+ requires aggressive kit distribution
+    // At end-of-game, unfulfilled flights get massive penalties (1.5 × distance × passengers)
+    const isEndGame = this.currentDay >= 28;
+
     // Sort flights by priority: longer distance = higher penalty if unfulfilled
     // UNFULFILLED_KIT_FACTOR_PER_DISTANCE = 0.003, so distance matters
     const sortedFlights = [...this.flightsReadyToDepart].sort((a, b) => {
@@ -274,15 +278,23 @@ export class GameState {
         // OPTIMIZATION: For flights TO HUB1, load extra kits if spoke has surplus
         // This brings kits back to hub for redistribution to other spokes
         if (flight.destinationAirport === 'HUB1' && toLoad < capacity) {
-          // Check if we have surplus stock beyond what's needed for upcoming flights
-          const upcomingDemand = this.calculateUpcomingDemandForAirport(flight.originAirport, 48, kitClass);
-          const currentStock = available - toLoad; // What remains after loading demand
-          const surplus = Math.max(0, currentStock - upcomingDemand);
-
-          if (surplus > 0) {
+          if (isEndGame) {
+            // END-GAME: Send ALL available kits back to hub
+            // Hub needs maximum stock for final departures - spoke stock is useless after game ends
             const remainingCapacity = capacity - toLoad;
-            const extraToLoad = Math.min(remainingCapacity, surplus);
+            const extraToLoad = Math.min(remainingCapacity, available - toLoad);
             toLoad += extraToLoad;
+          } else {
+            // Normal mode: only send surplus beyond upcoming demand
+            const upcomingDemand = this.calculateUpcomingDemandForAirport(flight.originAirport, 48, kitClass);
+            const currentStock = available - toLoad; // What remains after loading demand
+            const surplus = Math.max(0, currentStock - upcomingDemand);
+
+            if (surplus > 0) {
+              const remainingCapacity = capacity - toLoad;
+              const extraToLoad = Math.min(remainingCapacity, surplus);
+              toLoad += extraToLoad;
+            }
           }
         }
 
@@ -400,8 +412,9 @@ export class GameState {
   // Based on analysis: break-even distance = 333km, all routes > 815km = always profitable
   calculatePurchaseOrder(): PerClassAmount | undefined {
     // 1. Time constraint - stop purchasing late in game
-    // Economy lead time is 12h + transport time, so day 20+ purchases won't help
-    if (this.currentDay >= 20) {
+    // Extended to day 27 to ensure enough stock for end-game flights
+    // Kit-urile cumpărate la Day 27 au 48h să fie procesate înainte de end-of-game
+    if (this.currentDay >= 27) {
       return undefined;
     }
 
