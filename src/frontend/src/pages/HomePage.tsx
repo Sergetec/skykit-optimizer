@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { SimControls } from '../components/SimControls';
 import { PageShell } from '../components/PageShell';
 import { SiteHeader } from '../components/SiteHeader';
+import primaryNavLinks from '../data/navLinks';
 import type { UseGameStateResult } from '../hooks/useGameState';
 import type { Theme } from '../hooks/useTheme';
 
@@ -32,13 +33,6 @@ const defaultGameState = {
   events: [],
   recentPenalties: []
 };
-
-const navLinks = [
-  { to: '/inventory', label: 'Airport Inventory' },
-  { to: '/network', label: 'Global Network' },
-  { to: '/events', label: 'Events & Penalties' },
-  { to: '/contact', label: 'Contact Us' }
-];
 
 const formatCost = (value: number): string => {
   if (value >= 1000000) {
@@ -114,7 +108,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
       <SiteHeader isConnected={isConnected} theme={theme} onToggleTheme={onToggleTheme} />
 
       <nav className="flex flex-wrap gap-3 mb-6">
-        {navLinks.map(link => (
+        {primaryNavLinks.map(link => (
           <Link
             key={link.to}
             to={link.to}
