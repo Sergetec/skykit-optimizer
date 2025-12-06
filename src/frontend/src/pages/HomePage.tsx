@@ -36,7 +36,8 @@ const defaultGameState = {
 const navLinks = [
   { to: '/inventory', label: 'Airport Inventory' },
   { to: '/network', label: 'Global Network' },
-  { to: '/events', label: 'Events & Penalties' }
+  { to: '/events', label: 'Events & Penalties' },
+  { to: '/contact', label: 'Contact Us' }
 ];
 
 const formatCost = (value: number): string => {
