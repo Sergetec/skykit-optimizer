@@ -38,13 +38,13 @@ export function SimControls({ isStarting, isRunning, isComplete, round, onStartG
     : 'Start Simulation';
 
   return (
-    <div className="bg-panel rounded-[20px] border border-border p-6 flex justify-between items-center gap-6">
+    <div className="border-t border-border/60 pt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div className="flex items-center gap-2">
         <div className={`w-2.5 h-2.5 rounded-full ${statusDotClass}`} />
         <span>{statusText}</span>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p className="text-text-muted font-mono text-sm m-0">
           Round {round} / 720 ({((round / 720) * 100).toFixed(1)}% complete)
         </p>
@@ -52,7 +52,7 @@ export function SimControls({ isStarting, isRunning, isComplete, round, onStartG
         <button
           onClick={handleStart}
           disabled={isDisabled}
-          className={`px-6 py-3 text-base font-semibold border-none rounded-full transition-transform ${
+          className={`px-6 py-3 text-base font-semibold border border-transparent rounded-full transition-transform ${
             isDisabled
               ? 'bg-text-muted/30 text-text-muted cursor-not-allowed'
               : 'bg-accent text-[#001121] cursor-pointer shadow-[0_10px_30px_rgba(46,180,255,0.35)] hover:-translate-y-0.5'

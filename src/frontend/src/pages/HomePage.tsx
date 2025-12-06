@@ -1,8 +1,4 @@
 import { Link } from 'react-router-dom';
-import { StatsGrid } from '../components/StatsGrid';
-import { InventoryPanel } from '../components/InventoryPanel';
-import { MapPanel } from '../components/MapPanel';
-import { EventsPanel } from '../components/EventsPanel';
 import { SimControls } from '../components/SimControls';
 import { PageShell } from '../components/PageShell';
 import { SiteHeader } from '../components/SiteHeader';
@@ -42,6 +38,16 @@ const navLinks = [
   { to: '/network', label: 'Global Network' },
   { to: '/events', label: 'Events & Penalties' }
 ];
+
+const formatCost = (value: number): string => {
+  if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(2)}M`;
+  }
+  if (value >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`;
+  }
+  return `$${value.toFixed(0)}`;
+};
 
 export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
   const { state, isLoading, error, isConnected, startGame } = game;
@@ -99,25 +105,55 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
         ))}
       </nav>
 
-      <section className="bg-gradient-to-br from-bg-alt/95 to-panel-dark/95 rounded-[34px] p-6 sm:p-10 mb-10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_30px_80px_rgba(6,6,10,0.7)]">
-        <div className="mb-6">
-          <p className="uppercase tracking-[0.2em] text-xs text-text-muted mb-0.5">Live Simulation Dashboard</p>
-          <h2 className="mt-1 mb-6 text-3xl sm:text-4xl">Day {gameState.day} · Hour {gameState.hour}</h2>
+      <section className="rounded-[30px] border border-border/70 bg-panel/70 p-6 sm:p-10 mb-10">
+        <div className="mb-8 space-y-2">
+          <p className="uppercase tracking-[0.2em] text-xs text-text-muted">Live Simulation</p>
+          <h2 className="text-3xl sm:text-4xl">Day {gameState.day} · Hour {gameState.hour}</h2>
+          <p className="text-text-muted text-sm max-w-2xl">
+            A quick snapshot of the evaluation run. Visit the sections above to dive deeper into the inventory, global
+            network, or event streams.
+          </p>
         </div>
 
-        <StatsGrid
-          stats={gameState.stats}
-          day={gameState.day}
-          hour={gameState.hour}
-        />
+        <div className="grid gap-6 sm:grid-cols-2 mb-8">
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Status</p>
+            <div className="rounded-[18px] border border-border/60 p-4">
+              <p className="m-0 font-mono text-sm text-text-muted">Round {gameState.stats.roundsCompleted} / 720</p>
+              <p className="m-0 text-lg">{gameState.isComplete ? 'Complete' : gameState.isRunning ? 'In Progress' : 'Idle'}</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Connection</p>
+            <div className="rounded-[18px] border border-border/60 p-4 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success' : 'bg-danger'}`} />
+              <p className="m-0 text-sm">{isConnected ? 'Backend Connected' : 'Offline'}</p>
+            </div>
+          </div>
+        </div>
 
-        <div className="grid grid-cols-[300px_minmax(280px,1fr)_350px] gap-5 mb-6 max-xl:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
-          <InventoryPanel airports={gameState.airports} />
-          <MapPanel activeFlights={gameState.activeFlights} />
-          <EventsPanel
-            events={gameState.events}
-            penalties={gameState.recentPenalties}
-          />
+        <div className="mb-8 space-y-3">
+          <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Key Metrics</p>
+          <dl className="divide-y divide-border/60 border border-border/60 rounded-[18px]">
+            {[{
+              label: 'Total Cost',
+              value: formatCost(gameState.stats.totalCost)
+            }, {
+              label: 'Transport Cost',
+              value: formatCost(gameState.stats.transportCost)
+            }, {
+              label: 'Processing Cost',
+              value: formatCost(gameState.stats.processingCost)
+            }, {
+              label: 'Penalties',
+              value: `${gameState.stats.totalPenalties} • ${formatCost(gameState.stats.penaltyCost)}`
+            }].map(({ label, value }) => (
+              <div key={label} className="flex items-center justify-between gap-4 px-5 py-3 text-base">
+                <dt className="text-text-muted">{label}</dt>
+                <dd className="m-0 font-semibold">{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
 
         <SimControls
