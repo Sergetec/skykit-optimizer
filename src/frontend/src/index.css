@@ -107,13 +107,11 @@ html {
 }
 
 .animate-gradient {
-  /* Disabled for performance - uncomment if needed */
-  /* animation: gradient-pan 8s ease infinite; */
+  animation: gradient-pan 8s ease infinite;
 }
 
 .animate-float {
-  /* Disabled for performance - uncomment if needed */
-  /* animation: float-slow 6s ease-in-out infinite; */
+  animation: float-slow 6s ease-in-out infinite;
 }
 
 .animate-border-glow {
