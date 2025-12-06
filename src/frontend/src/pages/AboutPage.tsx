@@ -100,7 +100,7 @@ export function AboutPage({ game, theme, onToggleTheme }: AboutPageProps) {
       <SiteHeader isConnected={isConnected} theme={theme} onToggleTheme={onToggleTheme} />
 
       <div className="mb-6">
-        <BackToDashboardButton />
+        <BackToDashboardButton theme={theme} />
       </div>
 
       <section className="relative overflow-hidden rounded-[34px] border border-border/60 bg-gradient-to-br from-bg-alt/70 via-panel/80 to-panel-dark/80 p-6 sm:p-10 space-y-10">

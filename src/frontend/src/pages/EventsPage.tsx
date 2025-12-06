@@ -22,7 +22,7 @@ export function EventsPage({ game, theme, onToggleTheme }: EventsPageProps) {
       <SiteHeader isConnected={isConnected} theme={theme} onToggleTheme={onToggleTheme} />
 
       <div className="mb-6">
-        <BackToDashboardButton />
+        <BackToDashboardButton theme={theme} />
       </div>
 
       <div className="min-h-[70vh] flex items-center justify-center">

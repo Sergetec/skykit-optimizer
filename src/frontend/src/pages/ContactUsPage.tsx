@@ -34,7 +34,7 @@ export function ContactUsPage({ game, theme, onToggleTheme }: ContactUsPageProps
       <SiteHeader isConnected={isConnected} theme={theme} onToggleTheme={onToggleTheme} />
 
       <div className="mb-6">
-        <BackToDashboardButton />
+        <BackToDashboardButton theme={theme} />
       </div>
 
       <div className="max-w-5xl mx-auto space-y-8">
