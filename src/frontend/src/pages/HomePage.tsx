@@ -163,7 +163,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
               </div>
             </div>
 
-            <div className="glass-card rounded-[24px] px-6 py-5 w-full max-w-sm animate-float">
+            <div className="glass-card float-card rounded-[24px] px-6 py-5 w-full max-w-sm">
               <p className="uppercase tracking-[0.3em] text-xs text-text-muted mb-3">Connection</p>
               <div className="flex items-center gap-3">
                 <span className={`h-3 w-3 rounded-full ${isConnected ? 'bg-success shadow-[0_0_14px_rgba(74,223,134,0.7)]' : 'bg-danger shadow-[0_0_14px_rgba(255,90,95,0.5)]'}`} />
@@ -176,7 +176,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <div className="glass-card rounded-[24px] p-6 border border-border/70">
+            <div className="glass-card float-card rounded-[24px] p-6 border border-border/70">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Status</p>
                 <span className="text-sm font-mono text-text-muted">Round {gameState.stats.roundsCompleted} / 720</span>
@@ -193,7 +193,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
               <p className="mt-3 text-xs uppercase tracking-[0.3em] text-text-muted">{(progress * 100).toFixed(1)}% complete</p>
             </div>
 
-            <div className="glass-card rounded-[24px] p-6 border border-border/70 space-y-4">
+            <div className="glass-card float-card rounded-[24px] p-6 border border-border/70 space-y-4">
               <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Insights</p>
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
@@ -211,7 +211,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
               </div>
             </div>
 
-            <div className="glass-card rounded-[24px] p-6 border border-border/70">
+            <div className="glass-card float-card rounded-[24px] p-6 border border-border/70">
               <p className="text-xs uppercase tracking-[0.3em] text-text-muted mb-5">Timeline</p>
               <div className="space-y-4">
                 {[{ label: 'Morning Sort', time: '08:00', active: gameState.hour < 12 }, { label: 'Peak Ops', time: '16:00', active: gameState.hour >= 12 && gameState.hour < 20 }, { label: 'Overnight Recovery', time: '23:00', active: gameState.hour >= 20 || gameState.hour < 5 }].map(stage => (
@@ -231,7 +231,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
             <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Key Metrics</p>
             <div className="grid gap-4 md:grid-cols-2">
               {metricBlocks.map(metric => (
-                <div key={metric.label} className="glass-card rounded-[22px] p-5 border border-border/60 flex items-center justify-between backdrop-blur-xl">
+                <div key={metric.label} className="glass-card float-card rounded-[22px] p-5 border border-border/60 flex items-center justify-between backdrop-blur-xl">
                   <div>
                     <p className="text-xs uppercase tracking-[0.3em] text-text-muted">{metric.label}</p>
                     <p className="text-2xl font-semibold mt-1">{metric.value}</p>

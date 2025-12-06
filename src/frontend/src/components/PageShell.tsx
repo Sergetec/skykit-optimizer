@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { CursorTrail } from './CursorTrail';
 
 type PageShellProps = {
   children: ReactNode;
@@ -6,7 +7,8 @@ type PageShellProps = {
 
 export function PageShell({ children }: PageShellProps) {
   return (
-    <div className="min-h-screen bg-[radial-gradient(var(--color-grid)_1px,transparent_1px)] bg-[length:24px_24px] px-4 py-6 sm:px-8 lg:px-10">
+    <div className="relative min-h-screen bg-[radial-gradient(var(--color-grid)_1px,transparent_1px)] bg-[length:24px_24px] px-4 py-6 sm:px-8 lg:px-10">
+      <CursorTrail />
       {children}
     </div>
   );

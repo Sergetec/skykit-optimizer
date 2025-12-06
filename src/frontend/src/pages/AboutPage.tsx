@@ -21,7 +21,7 @@ const focusAreas = [
   },
   {
     label: 'Competitive grit',
-    body: 'Ana’s Special Prize at the National Informatics Olympiad plus years of Scientific Communication Sessions keep our algorithms sharp and review-ready.'
+    body: 'Antonia’s Special Prize at the National Informatics Olympiad plus years of Scientific Communication Sessions keep our algorithms sharp and review-ready.'
   }
 ];
 
@@ -33,7 +33,7 @@ const snapshot = [
 
 const teamMembers = [
   {
-    name: 'Ana-Antonia Dutu',
+    name: 'Antonia Duțu',
     title: 'Product Engineer · IoT & Algorithms',
     education: 'Computer Engineering (IoT) · UNSTPB — Tudor Vianu HS alumna',
     summary:
@@ -76,7 +76,7 @@ const teamMembers = [
 const timeline = [
   {
     phase: 'Olympiad roots · 2021-2023',
-    detail: 'Ana and Mihnea collect National Informatics Olympiad distinctions while Sergiu moderates Brainly and showcases STEM demos across Bucharest.'
+    detail: 'Antonia and Mihnea collect National Informatics Olympiad distinctions while Sergiu moderates Brainly and showcases STEM demos across Bucharest.'
   },
   {
     phase: 'Engineering track · 2024',
@@ -84,7 +84,7 @@ const timeline = [
   },
   {
     phase: 'Production internships · 2025',
-    detail: 'Mihnea joins Verasys to ship Payload CMS services, Sergiu runs Verasys integrations + Inventory Manager, and Ana presents dual projects at the Scientific Communication Session.'
+    detail: 'Mihnea joins Verasys to ship Payload CMS services, Sergiu runs Verasys integrations + Inventory Manager, and Antonia presents dual projects at the Scientific Communication Session.'
   },
   {
     phase: 'SkyKit build · Present',
@@ -114,7 +114,7 @@ export function AboutPage({ game, theme, onToggleTheme }: AboutPageProps) {
               About our crew
             </h2>
             <p className="text-text-muted text-base max-w-3xl mt-3">
-              This console is powered by Ana-Antonia Duțu, Mihnea-Rafael Dunărințu, and Sergiu Lefter—three Computer Engineering (IoT)
+              This console is powered by Antonia Duțu, Mihnea-Rafael Dunărințu, and Sergiu Lefter—three Computer Engineering (IoT)
               students whose CVs span Verasys production work, Olympiad prizes, DiscoverEU travel, and a stack of React, Payload CMS,
               MongoDB, and Gemini-based projects.
             </p>
