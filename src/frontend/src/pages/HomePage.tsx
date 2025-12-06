@@ -199,6 +199,7 @@ export function HomePage({ game, theme, onToggleTheme, language, onToggleLanguag
     'border border-[#3b82f6]/70 text-[#cfe0ff] shadow-[0_0_18px_rgba(56,189,248,0.25)] hover:border-[#7dd3fc] hover:text-white';
   const navButtonLight = 'border border-border text-text-muted hover:text-text hover:border-accent';
   const navButtonClass = `${navButtonBase} ${theme === 'dark' ? navButtonDark : navButtonLight}`;
+  const hamburgerLineClass = 'absolute left-0 block h-0.5 w-full rounded-full bg-text transition-all duration-300 ease-in-out';
 
   const toggleNav = () => setIsNavOpen(prev => !prev);
 
@@ -235,10 +236,10 @@ export function HomePage({ game, theme, onToggleTheme, language, onToggleLanguag
           >
             <span>{isNavOpen ? t({ en: 'Close navigation', ro: 'Închide navigarea' }) : t({ en: 'Open navigation', ro: 'Deschide navigarea' })}</span>
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-panel-dark/60">
-              <span className="flex flex-col gap-1.5">
-                <span className={`block h-0.5 w-6 rounded-full bg-text transition-transform ${isNavOpen ? 'translate-y-[5px] rotate-45' : ''}`} />
-                <span className={`block h-0.5 w-6 rounded-full bg-text transition-opacity ${isNavOpen ? 'opacity-0' : 'opacity-100'}`} />
-                <span className={`block h-0.5 w-6 rounded-full bg-text transition-transform ${isNavOpen ? '-translate-y-[5px] -rotate-45' : ''}`} />
+              <span className="relative block h-5 w-6" aria-hidden="true">
+                <span className={`${hamburgerLineClass} ${isNavOpen ? 'top-1/2 -translate-y-1/2 rotate-45' : 'top-0'}`} />
+                <span className={`${hamburgerLineClass} top-1/2 -translate-y-1/2 ${isNavOpen ? 'opacity-0' : 'opacity-100'}`} />
+                <span className={`${hamburgerLineClass} ${isNavOpen ? 'top-1/2 -translate-y-1/2 -rotate-45' : 'bottom-0'}`} />
               </span>
             </span>
           </button>
