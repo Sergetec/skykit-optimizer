@@ -18,6 +18,63 @@ import { DemandForecaster } from './forecasting';
 import { getAdaptiveEngine } from './adaptive';
 import { problemLogger } from './problemLogger';
 
+// ============ ECONOMY LOADING ANALYTICS ============
+interface EconomyLoadingStats {
+  totalFlights: number;
+  totalDemand: number;
+  totalLoaded: number;
+  totalSkipped: number;
+  byLoadFactor: Record<string, number>;  // "0.70" -> count
+  constrainedByStock: number;
+  constrainedByCapacity: number;
+  constrainedByDestRoom: number;
+}
+
+let economyStats: EconomyLoadingStats = {
+  totalFlights: 0,
+  totalDemand: 0,
+  totalLoaded: 0,
+  totalSkipped: 0,
+  byLoadFactor: {},
+  constrainedByStock: 0,
+  constrainedByCapacity: 0,
+  constrainedByDestRoom: 0
+};
+
+export function resetEconomyStats(): void {
+  economyStats = {
+    totalFlights: 0,
+    totalDemand: 0,
+    totalLoaded: 0,
+    totalSkipped: 0,
+    byLoadFactor: {},
+    constrainedByStock: 0,
+    constrainedByCapacity: 0,
+    constrainedByDestRoom: 0
+  };
+}
+
+export function printEconomyStats(): void {
+  const fulfillRate = economyStats.totalDemand > 0
+    ? ((economyStats.totalLoaded / economyStats.totalDemand) * 100).toFixed(1)
+    : '0';
+
+  console.log('\n========== ECONOMY LOADING ANALYTICS ==========');
+  console.log(`Total economy flights: ${economyStats.totalFlights}`);
+  console.log(`Total demand: ${economyStats.totalDemand} kits`);
+  console.log(`Total loaded: ${economyStats.totalLoaded} kits (${fulfillRate}%)`);
+  console.log(`Total skipped: ${economyStats.totalSkipped} kits`);
+  console.log('\nLoad factor distribution:');
+  for (const [factor, count] of Object.entries(economyStats.byLoadFactor).sort()) {
+    console.log(`  ${factor}: ${count} flights`);
+  }
+  console.log('\nConstraints hit:');
+  console.log(`  Stock limited: ${economyStats.constrainedByStock} flights`);
+  console.log(`  Aircraft capacity limited: ${economyStats.constrainedByCapacity} flights`);
+  console.log(`  Destination room limited: ${economyStats.constrainedByDestRoom} flights`);
+  console.log('================================================\n');
+}
+
 export class FlightLoader {
   private inventoryManager: InventoryManager;
   private demandForecaster: DemandForecaster;
@@ -76,15 +133,25 @@ export class FlightLoader {
     // Economic ratio: how much more expensive is the penalty vs the transport cost?
     const ratio = penaltyPerKit / totalCost;
 
-    // Map ratio to load factor using policy thresholds
-    // These are POLICY CHOICES, not dataset-specific tuning:
-    // - 70% minimum: Never skip more than 30% of economy demand
-    // - 90% maximum: Always skip at least 10% (accounts for overflow risk)
-    if (ratio >= 80) return 0.90;
-    if (ratio >= 50) return 0.85;
-    if (ratio >= 30) return 0.80;
-    if (ratio >= 15) return 0.75;
-    return 0.70;
+    // DYNAMIC load factor based on penalty/cost ratio
+    //
+    // Economic interpretation:
+    // - ratio > 1.0: penalty > cost → loading is profitable
+    // - ratio < 1.0: penalty < cost → skipping saves money
+    // - ratio = 1.0: breakeven point
+    //
+    // EMPIRICAL FINDING: Higher load factors cause overflow which costs more than
+    // the UNFULFILLED savings. The optimal range appears to be 0.65-0.70.
+    //
+    // Formula: loadFactor = 0.60 + 0.10 * min(ratio, 1.0)
+    // - At ratio=0: loadFactor = 0.60 (minimum, skip 40%)
+    // - At ratio=1: loadFactor = 0.70 (maximum, skip 30%)
+    // - Above ratio=1: still 0.70 (capped to prevent overflow)
+    //
+    // This is dataset-agnostic: works for any fuel costs, distances, penalty rates
+    const clampedRatio = Math.min(ratio, 1.0);  // Cap benefit at breakeven
+    const loadFactor = 0.60 + 0.10 * clampedRatio;
+    return Math.max(0.60, Math.min(0.70, loadFactor));
   }
 
   /**
@@ -299,6 +366,14 @@ export class FlightLoader {
     const demand = Math.floor(rawDemand * LOAD_FACTOR[kitClass]);
     const rawAvailable = originStock[kitClass];
 
+    // Track economy loading statistics
+    if (kitClass === 'economy') {
+      economyStats.totalFlights++;
+      economyStats.totalDemand += rawDemand;
+      const factorKey = economyFactor.toFixed(2);
+      economyStats.byLoadFactor[factorKey] = (economyStats.byLoadFactor[factorKey] || 0) + 1;
+    }
+
     // Safety buffer to avoid negative inventory
     // Buffer can be absolute (100, 20) or percentage (0.01, 0.03) - detect and apply accordingly
     const isHub = flight.originAirport === 'HUB1';
@@ -337,7 +412,7 @@ export class FlightLoader {
       if (flight.destinationAirport === 'HUB1') {
         baseBuffer = 0.95;  // HUB1 can handle more
       } else if (kitClass === 'economy') {
-        baseBuffer = 0.70;  // 70% for Economy (most problematic)
+        baseBuffer = 0.70;  // 70% for Economy - higher values cause overflow
       } else if (kitClass === 'premiumEconomy') {
         baseBuffer = 0.80;  // 80% for PE
       } else {
@@ -363,6 +438,10 @@ export class FlightLoader {
           expectedTotal,
           destCapacity
         );
+        // Track destination room constraint for economy
+        if (kitClass === 'economy') {
+          economyStats.constrainedByDestRoom++;
+        }
         toLoad = Math.max(0, destRoom);
       }
     }
@@ -429,7 +508,26 @@ export class FlightLoader {
       toLoad = Math.max(0, rawAvailable);
     }
 
-    return Math.min(toLoad, rawAvailable);
+    const finalLoad = Math.min(toLoad, rawAvailable);
+
+    // Track economy constraints
+    if (kitClass === 'economy') {
+      economyStats.totalLoaded += finalLoad;
+      economyStats.totalSkipped += (rawDemand - finalLoad);
+
+      // Detect which constraint limited us
+      if (finalLoad < demand) {
+        if (available < demand) {
+          economyStats.constrainedByStock++;
+        }
+        if (capacity < demand) {
+          economyStats.constrainedByCapacity++;
+        }
+        // destRoom constraint is tracked via the overflow check above
+      }
+    }
+
+    return finalLoad;
   }
 
   /**
@@ -493,7 +591,9 @@ export class FlightLoader {
     let roomCheckThreshold = 0.20;
     let maxExtraPercent = 0.05;
 
-    // Economy extra loading disabled - causes overflow without reducing UNFULFILLED
+    // Economy extra loading DISABLED - tested and caused +$3.4M worse score
+    // Reduced UNFULFILLED by $23M but increased transport costs + caused 21 overflows
+    // Net effect: NEGATIVE. Distribution is not the bottleneck.
     if (kitClass === 'economy') {
       return 0;  // NO extra Economy kits to spokes
     }

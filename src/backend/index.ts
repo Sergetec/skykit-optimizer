@@ -5,6 +5,7 @@ import { GameState } from './engine/state';
 import { calculateDynamicPurchaseConfig, calculateDynamicLoadingConfig } from './engine/types';
 import { problemLogger } from './engine/problemLogger';
 import { getAdaptiveEngine, resetAdaptiveEngine } from './engine/adaptive';
+import { resetEconomyStats, printEconomyStats } from './engine/flightLoader';
 import {
   startServer,
   registerGameCallback,
@@ -300,6 +301,9 @@ async function runGame() {
   // Reset adaptive engine for new simulation
   resetAdaptiveEngine();
 
+  // Reset economy loading stats for new simulation
+  resetEconomyStats();
+
   // Initialize API client
   const client = new ApiClient();
 
@@ -512,6 +516,9 @@ async function runGame() {
 
     // Write detailed penalty logs to file
     writePenaltyLogs();
+
+    // Print economy loading analytics
+    printEconomyStats();
 
     // Print problem summary (doar dacă au fost probleme)
     problemLogger.printSummary();

@@ -9,7 +9,7 @@ export { GameState } from './state';
 // Modular components
 export { InventoryManager } from './inventory';
 export { DemandForecaster } from './forecasting';
-export { FlightLoader } from './flightLoader';
+export { FlightLoader, resetEconomyStats, printEconomyStats } from './flightLoader';
 export { PurchasingManager } from './purchasing';
 export { AdaptiveEngine, getAdaptiveEngine, resetAdaptiveEngine } from './adaptive';
 export { problemLogger } from './problemLogger';
