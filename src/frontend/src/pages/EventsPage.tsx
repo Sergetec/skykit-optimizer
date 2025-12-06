@@ -15,6 +15,7 @@ export function EventsPage({ game, theme, onToggleTheme }: EventsPageProps) {
   const { state, isLoading, error, isConnected } = game;
   const events = state?.events || [];
   const penalties = state?.recentPenalties || [];
+  const penaltiesByDay = state?.penaltiesByDay || {};
 
   const backLink = (
     <Link to="/" className="text-xs uppercase tracking-[0.2em] text-text-muted hover:text-text">
@@ -36,7 +37,7 @@ export function EventsPage({ game, theme, onToggleTheme }: EventsPageProps) {
           {isLoading && <p className="text-text-muted">Loading events...</p>}
           {!isLoading && error && !isConnected && <p className="text-danger">{error}</p>}
 
-          <EventsPanel events={events} penalties={penalties} />
+          <EventsPanel events={events} penalties={penalties} penaltiesByDay={penaltiesByDay} />
         </section>
       </div>
     </PageShell>

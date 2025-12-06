@@ -43,6 +43,11 @@ export interface PenaltyInfo {
   issuedHour: number;
 }
 
+// Penalties grouped by day (day number -> array of penalties)
+export interface PenaltiesByDay {
+  [day: number]: PenaltyInfo[];
+}
+
 export interface GameEvent {
   type: 'flight' | 'purchase' | 'warning' | 'penalty';
   text: string;
@@ -71,6 +76,7 @@ export interface GameStateSnapshot {
   activeFlights: FlightInfo[];
   events: GameEvent[];
   recentPenalties: PenaltyInfo[];
+  penaltiesByDay: PenaltiesByDay;
 }
 
 export interface UseGameStateResult {
