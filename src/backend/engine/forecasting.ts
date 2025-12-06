@@ -293,4 +293,24 @@ export class DemandForecaster {
   getFlightPlans(): FlightPlan[] {
     return this.flightPlans;
   }
+
+  /**
+   * Calculate average flight distance from all flight plans
+   * Used to calibrate loading factors for different datasets
+   */
+  getAverageFlightDistance(): number {
+    if (this.flightPlans.length === 0) return 2800; // Default fallback
+
+    let totalDistance = 0;
+    let count = 0;
+
+    for (const plan of this.flightPlans) {
+      if (plan.distanceKm > 0) {
+        totalDistance += plan.distanceKm;
+        count++;
+      }
+    }
+
+    return count > 0 ? totalDistance / count : 2800;
+  }
 }

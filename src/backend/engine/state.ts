@@ -66,6 +66,9 @@ export class GameState {
       aircraftTypes,
       loadingConfig
     );
+    // Compute dynamic economy load factor based on dataset characteristics
+    this.flightLoader.computeEconomyLoadFactor();
+
     this.purchasingManager = new PurchasingManager(
       this.inventoryManager,
       this.demandForecaster,
