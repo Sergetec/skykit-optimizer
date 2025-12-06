@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { GameEvent, PenaltyInfo, PenaltiesByDay } from '../hooks/useGameState';
+import type { Language } from '../hooks/useLanguage';
+import { pickLanguage } from '../i18n/utils';
 
 interface EventsPanelProps {
   events: GameEvent[];
   penalties: PenaltyInfo[];
   penaltiesByDay?: PenaltiesByDay;
+  language: Language;
 }
 
 type TabType = 'events' | 'penalties';
@@ -25,8 +28,16 @@ const eventIcons: Record<string, string> = {
   penalty: '$'
 };
 
-export function EventsPanel({ events, penalties, penaltiesByDay }: EventsPanelProps) {
+export function EventsPanel({ events, penalties, penaltiesByDay, language }: EventsPanelProps) {
   const [activeTab, setActiveTab] = useState<TabType>('events');
+  const locale = useMemo(() => (language === 'ro' ? 'ro-RO' : 'en-US'), [language]);
+  const eventsLabel = pickLanguage(language, { en: 'Events', ro: 'Evenimente' });
+  const penaltiesLabel = pickLanguage(language, { en: 'Penalties', ro: 'Penalizări' });
+  const noEventsText = pickLanguage(language, { en: 'No events yet. Start the game to see updates.', ro: 'Încă nu există evenimente. Pornește jocul pentru a vedea actualizări.' });
+  const noPenaltiesText = pickLanguage(language, { en: 'No penalties incurred yet.', ro: 'Nu s-au aplicat penalizări.' });
+  const dayLabel = (day: number) => pickLanguage(language, { en: `Day ${day}`, ro: `Ziua ${day}` });
+  const penaltyCountLabel = (count: number) => pickLanguage(language, { en: `${count} penalties`, ro: `${count} penalizări` });
+  const flightLabel = pickLanguage(language, { en: 'Flight', ro: 'Zbor' });
 
   // Calculate total penalties count from penaltiesByDay
   const totalPenaltiesCount = penaltiesByDay
@@ -51,20 +62,20 @@ export function EventsPanel({ events, penalties, penaltiesByDay }: EventsPanelPr
           className={`flex-1 bg-transparent border-none text-text-muted font-semibold p-4 cursor-pointer transition-colors ${activeTab === 'events' ? 'bg-white/5 text-text' : ''}`}
           onClick={() => setActiveTab('events')}
         >
-          Events ({events.length})
+          {eventsLabel} ({events.length})
         </button>
         <button
           className={`flex-1 bg-transparent border-none text-text-muted font-semibold p-4 cursor-pointer transition-colors ${activeTab === 'penalties' ? 'bg-white/5 text-text' : ''}`}
           onClick={() => setActiveTab('penalties')}
         >
-          Penalties ({totalPenaltiesCount})
+          {penaltiesLabel} ({totalPenaltiesCount})
         </button>
       </div>
       <div className="overflow-y-auto max-h-[500px] px-5 pb-5 pt-0">
         {activeTab === 'events' ? (
           <div className="pt-5">
             {events.length === 0 ? (
-              <p className="text-text-muted text-sm">No events yet. Start the game to see updates.</p>
+              <p className="text-text-muted text-sm">{noEventsText}</p>
             ) : (
               events.slice().reverse().map((event, index) => {
                 const iconType = event.type as keyof typeof badgeStyles;
@@ -90,10 +101,10 @@ export function EventsPanel({ events, penalties, penaltiesByDay }: EventsPanelPr
                 {/* Day header */}
                 <div className="sticky top-0 bg-panel py-2 border-b border-accent/30 mb-3">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold text-accent m-0">Day {day}</h3>
+                    <h3 className="text-lg font-semibold text-accent m-0">{dayLabel(day)}</h3>
                     <div className="text-right">
-                      <span className="text-text-muted text-xs">{dayPenalties.length} penalties</span>
-                      <span className="text-danger font-bold ml-3">${dayTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-text-muted text-xs">{penaltyCountLabel(dayPenalties.length)}</span>
+                      <span className="text-danger font-bold ml-3">${dayTotal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
@@ -103,13 +114,13 @@ export function EventsPanel({ events, penalties, penaltiesByDay }: EventsPanelPr
                     <span className={`${badgeStyles.base} ${badgeStyles.danger}`}>$</span>
                     <div className="flex-1">
                       <p className="m-0 text-sm">
-                        <strong className="text-danger">${penalty.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                        <strong className="text-danger">${penalty.amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                         {' - '}{penalty.code}
                       </p>
                       <p className="text-text-muted text-xs mt-1 m-0">
-                        <span className="text-accent/70">H{penalty.issuedHour}</span>
+                        <span className="text-accent/70">{pickLanguage(language, { en: `H${penalty.issuedHour}`, ro: `Ora ${penalty.issuedHour}` })}</span>
                         {' '}{penalty.reason}
-                        {penalty.flightNumber && <span className="ml-2 text-accent">Flight: {penalty.flightNumber}</span>}
+                        {penalty.flightNumber && <span className="ml-2 text-accent">{flightLabel}: {penalty.flightNumber}</span>}
                       </p>
                     </div>
                   </div>
@@ -119,7 +130,7 @@ export function EventsPanel({ events, penalties, penaltiesByDay }: EventsPanelPr
           })
         ) : penalties.length === 0 ? (
           <div className="pt-5">
-            <p className="text-text-muted text-sm">No penalties incurred yet.</p>
+            <p className="text-text-muted text-sm">{noPenaltiesText}</p>
           </div>
         ) : (
           // Fallback to simple list if penaltiesByDay not available
@@ -129,7 +140,7 @@ export function EventsPanel({ events, penalties, penaltiesByDay }: EventsPanelPr
                 <span className={`${badgeStyles.base} ${badgeStyles.danger}`}>$</span>
                 <div>
                   <p className="m-0 text-sm">
-                    <strong className="text-danger">${penalty.amount.toFixed(2)}</strong>
+                    <strong className="text-danger">${penalty.amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                     {' - '}{penalty.code}
                   </p>
                   <p className="text-text-muted text-xs mt-1 m-0">

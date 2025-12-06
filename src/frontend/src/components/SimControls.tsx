@@ -1,19 +1,23 @@
+import type { Language } from '../hooks/useLanguage';
+import { pickLanguage } from '../i18n/utils';
+
 interface SimControlsProps {
   isStarting: boolean;
   isRunning: boolean;
   isComplete: boolean;
   round: number;
   onStartGame: () => Promise<{ success: boolean; message: string }>;
+  language: Language;
 }
 
-export function SimControls({ isStarting, isRunning, isComplete, round, onStartGame }: SimControlsProps) {
+export function SimControls({ isStarting, isRunning, isComplete, round, onStartGame, language }: SimControlsProps) {
   const statusText = isComplete
-    ? 'Simulation Complete'
+    ? pickLanguage(language, { en: 'Simulation complete', ro: 'Simulare finalizată' })
     : isRunning
-    ? 'Simulation Running...'
+    ? pickLanguage(language, { en: 'Simulation running...', ro: 'Simulare în desfășurare...' })
     : isStarting
-    ? 'Starting eval-platform...'
-    : 'Ready to start';
+    ? pickLanguage(language, { en: 'Starting evaluation platform...', ro: 'Pornim platforma de evaluare...' })
+    : pickLanguage(language, { en: 'Ready to start', ro: 'Pregătit de start' });
 
   const handleStart = async () => {
     await onStartGame();
@@ -30,12 +34,17 @@ export function SimControls({ isStarting, isRunning, isComplete, round, onStartG
     : 'bg-text-muted';
 
   const buttonText = isStarting
-    ? 'Starting...'
+    ? pickLanguage(language, { en: 'Starting...', ro: 'Se pornește...' })
     : isRunning
-    ? 'Running...'
+    ? pickLanguage(language, { en: 'Running...', ro: 'Rulează...' })
     : isComplete
-    ? 'Completed'
-    : 'Start Simulation';
+    ? pickLanguage(language, { en: 'Completed', ro: 'Finalizat' })
+    : pickLanguage(language, { en: 'Start simulation', ro: 'Pornește simularea' });
+
+  const progressText = pickLanguage(language, {
+    en: `Round ${round} / 720 (${((round / 720) * 100).toFixed(1)}% complete)`,
+    ro: `Runda ${round} / 720 (${((round / 720) * 100).toFixed(1)}% finalizat)`
+  });
 
   return (
     <div className="border-t border-border/60 pt-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -46,7 +55,7 @@ export function SimControls({ isStarting, isRunning, isComplete, round, onStartG
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p className="text-text-muted font-mono text-sm m-0">
-          Round {round} / 720 ({((round / 720) * 100).toFixed(1)}% complete)
+          {progressText}
         </p>
 
         <button

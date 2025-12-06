@@ -1,12 +1,23 @@
 import { useState } from 'react';
 import type { AirportStock } from '../hooks/useGameState';
+import type { Language } from '../hooks/useLanguage';
+import { pickLanguage } from '../i18n/utils';
 
 interface InventoryPanelProps {
   airports: AirportStock[];
+  language: Language;
 }
 
-export function InventoryPanel({ airports }: InventoryPanelProps) {
+export function InventoryPanel({ airports, language }: InventoryPanelProps) {
   const [showOnlyLowStock, setShowOnlyLowStock] = useState(false);
+  const title = pickLanguage(language, { en: 'Airport Inventory', ro: 'Inventar aeroportuar' });
+  const filterLabel = pickLanguage(language, { en: 'Show only low stock', ro: 'Doar stoc critic' });
+  const allHealthy = pickLanguage(language, { en: 'All airports healthy', ro: 'Toate aeroporturile sunt ok' });
+  const noneLoaded = pickLanguage(language, { en: 'No airports loaded', ro: 'Nu există date pentru aeroporturi' });
+  const moreAirportsLabel = (extra: number) => pickLanguage(language, {
+    en: `+${extra} more airports`,
+    ro: `+${extra} aeroporturi în plus`
+  });
 
   const filteredAirports = showOnlyLowStock
     ? airports.filter(a => a.isLowStock)
@@ -17,7 +28,7 @@ export function InventoryPanel({ airports }: InventoryPanelProps) {
   return (
     <div className="bg-panel rounded-[20px] border border-border p-6 overflow-hidden">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="m-0 text-lg">Airport Inventory</h3>
+        <h3 className="m-0 text-lg">{title}</h3>
         <label className="text-xs text-text-muted flex items-center gap-1.5 cursor-pointer">
           <input
             type="checkbox"
@@ -25,7 +36,7 @@ export function InventoryPanel({ airports }: InventoryPanelProps) {
             onChange={(e) => setShowOnlyLowStock(e.target.checked)}
             className="accent-accent"
           />
-          Show only low stock
+          {filterLabel}
         </label>
       </div>
       <div className="overflow-x-auto">
@@ -43,7 +54,7 @@ export function InventoryPanel({ airports }: InventoryPanelProps) {
           {displayAirports.length === 0 ? (
             <tr>
               <td colSpan={5} className="text-center p-3 text-text-muted">
-                {showOnlyLowStock ? 'All airports healthy' : 'No airports loaded'}
+                {showOnlyLowStock ? allHealthy : noneLoaded}
               </td>
             </tr>
           ) : (
@@ -62,7 +73,7 @@ export function InventoryPanel({ airports }: InventoryPanelProps) {
       </div>
       {filteredAirports.length > 15 && (
         <p className="text-text-muted text-sm mt-2 text-center">
-          +{filteredAirports.length - 15} more airports
+          {moreAirportsLabel(filteredAirports.length - 15)}
         </p>
       )}
     </div>

@@ -1,8 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import type { Theme } from '../hooks/useTheme';
+import type { Language } from '../hooks/useLanguage';
+import { pickLanguage } from '../i18n/utils';
 
 type BackToDashboardButtonProps = {
   theme: Theme;
+  language: Language;
   className?: string;
 };
 
@@ -10,9 +13,10 @@ const baseClass = 'inline-flex items-center justify-center rounded-full px-4 py-
 const darkVariant = 'border border-[#3b82f6]/70 text-[#cfe0ff] shadow-[0_0_18px_rgba(56,189,248,0.25)] hover:border-[#7dd3fc] hover:text-white';
 const lightVariant = 'border border-border text-text-muted hover:text-text hover:border-accent';
 
-export function BackToDashboardButton({ theme, className }: BackToDashboardButtonProps) {
+export function BackToDashboardButton({ theme, language, className }: BackToDashboardButtonProps) {
   const navigate = useNavigate();
   const variantClass = theme === 'dark' ? darkVariant : lightVariant;
+  const label = pickLanguage(language, { en: 'Back to Dashboard', ro: 'Înapoi la panou' });
 
   return (
     <button
@@ -20,7 +24,7 @@ export function BackToDashboardButton({ theme, className }: BackToDashboardButto
       className={`${baseClass} ${variantClass} ${className ?? ''}`.trim()}
       onClick={() => navigate('/')}
     >
-      Back to Dashboard
+      {label}
     </button>
   );
 }

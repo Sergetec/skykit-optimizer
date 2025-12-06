@@ -1,25 +1,40 @@
 import type { Theme } from '../hooks/useTheme';
+import type { Language } from '../hooks/useLanguage';
+import { pickLanguage } from '../i18n/utils';
 
 type ThemeToggleProps = {
   theme: Theme;
   onToggle: () => void;
+  language: Language;
 };
 
-export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
+export function ThemeToggle({ theme, onToggle, language }: ThemeToggleProps) {
   const isDark = theme === 'dark';
+  const buttonLabel = pickLanguage(language, {
+    en: `Switch to ${isDark ? 'light' : 'dark'} mode`,
+    ro: `Comută în modul ${isDark ? 'luminos' : 'întunecat'}`
+  });
+  const fullLabel = pickLanguage(language, {
+    en: isDark ? 'Light Mode' : 'Dark Mode',
+    ro: isDark ? 'Mod luminos' : 'Mod întunecat'
+  });
+  const compactLabel = pickLanguage(language, {
+    en: isDark ? 'Light' : 'Dark',
+    ro: isDark ? 'Luminos' : 'Întunecat'
+  });
 
   return (
     <button
       type="button"
       onClick={onToggle}
-      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      aria-label={buttonLabel}
       className="flex items-center gap-3 rounded-full border border-border bg-panel/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.25em] text-text backdrop-blur transition-colors hover:bg-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm ${isDark ? 'bg-accent/20 text-accent' : 'bg-bg-alt text-warning'}`}>
         {isDark ? <SunIcon /> : <MoonIcon />}
       </span>
-      <span className="hidden sm:inline">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-      <span className="sm:hidden">{isDark ? 'Light' : 'Dark'}</span>
+      <span className="hidden sm:inline">{fullLabel}</span>
+      <span className="sm:hidden">{compactLabel}</span>
     </button>
   );
 }
