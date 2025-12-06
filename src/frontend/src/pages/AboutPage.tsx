@@ -10,28 +10,90 @@ type AboutPageProps = {
   onToggleTheme: () => void;
 };
 
-const teamMembers = [
-  { name: 'Mara Ionescu', title: 'Optimization Lead', focus: 'Network heuristics & solver tuning' },
-  { name: 'Victor Manea', title: 'Simulation Engineer', focus: 'Digital twin & scenario runs' },
-  { name: 'Sara Lungu', title: 'Experience Designer', focus: 'Immersive control surfaces' },
-  { name: 'Alex Pavel', title: 'Data Pipeline', focus: 'Signals, events, and telemetry' }
+const focusAreas = [
+  {
+    label: 'IoT-born engineering',
+    body: 'All three of us study Computer Engineering (IoT) at UNSTPB/FILS, so telemetry and connected devices anchor every decision we make inside SkyKit.'
+  },
+  {
+    label: 'Production-first delivery',
+    body: 'Mihnea and Sergiu both shipped Verasys commerce systems (Payload CMS, Next.js, REST APIs) and bring that full-stack discipline directly into our hackathon code.'
+  },
+  {
+    label: 'Competitive grit',
+    body: 'Ana’s Special Prize at the National Informatics Olympiad plus years of Scientific Communication Sessions keep our algorithms sharp and review-ready.'
+  }
 ];
 
-const values = [
-  { label: 'Trust the numbers', body: 'Every UI card is backed by live telemetry, so decisions stay data-first.' },
-  { label: 'Design for clarity', body: 'Complex ops distilled into cinematic yet functional panels.' },
-  { label: 'Prototype fast', body: 'We iterate daily with pilots and maintenance planners in the loop.' }
+const snapshot = [
+  { label: 'Production systems', value: 'Verasys commerce stack · Inventory Manager RBAC suite' },
+  { label: 'Competitions', value: 'Perpetuum Hackathon · Students’ Scientific Communication Session · Informatics Olympiad' },
+  { label: 'Community', value: 'DiscoverEU fellow · Brainly QA moderator · Bucharest Science Festival exhibitor' }
+];
+
+const teamMembers = [
+  {
+    name: 'Ana-Antonia Dutu',
+    title: 'Product Engineer · IoT & Algorithms',
+    education: 'Computer Engineering (IoT) · UNSTPB — Tudor Vianu HS alumna',
+    summary:
+      'Pairs Olympiad-level C++/Java foundations with React and TypeScript interfaces; led Cutie Habit, AnaBot (Gemini API), and multiple scientific-session demos.',
+    highlights: [
+      'Special Prize – National Informatics Olympiad (regional) · automatic university admission',
+      'Students’ Scientific Communication Session 2025 – two accepted projects (data structures + UI)',
+      'Perpetuum Hackathon, EDB StartUP finalist, and IC3 + FCE certified'
+    ],
+    stack: 'C++, Java, React, SQL, Bash'
+  },
+  {
+    name: 'Mihnea-Rafael Dunărințu',
+    title: 'Fullstack Engineer · Payload & Firebase',
+    education: 'Computer Engineering (IoT) · UNSTPB — Constantin Brâncoveanu Tech College',
+    summary:
+      'Currently a Fullstack Engineer at Verasys, operating Payload CMS/Next.js e-commerce backends with AI semantic search, Dockerized ops, and data ingestion pipelines.',
+    highlights: [
+      'Built EDUFILS educational portal and a Bash-powered realtime form site with MariaDB + websockets',
+      'Students’ Scientific Communication Session 2025 – Task Manager fullstack submission',
+      'Multiple podium finishes at National Informatics Olympiad county stages (2nd & 3rd place)'
+    ],
+    stack: 'TypeScript, React, Payload CMS, SQL, Firebase, Bash'
+  },
+  {
+    name: 'Sergiu Lefter',
+    title: 'Platform & Integrations Engineer',
+    education: 'Computer Engineering · UNSTPB — DiscoverEU Erasmus cohort',
+    summary:
+      'Full Stack Web Developer at Verasys (Next.js, Tailwind, Payload CMS) with a focus on ingesting provider feeds, QA moderation, and interactive science outreach.',
+    highlights: [
+      'Inventory Manager project with RBAC dashboards (Node.js, React, MongoDB, Chart.js)',
+      'Brainly Romania QA moderator plus Bucharest Science Festival exhibitor',
+      'Merit award at Bucharest Informatics Olympiad · DiscoverEU cultural ambassador'
+    ],
+    stack: 'Next.js, TypeScript, MongoDB, Tailwind CSS, REST APIs'
+  }
 ];
 
 const timeline = [
-  { label: 'Research Sprint', detail: 'Interviewed OCC teams and gathered routes with the highest disruption risk.' },
-  { label: 'Model Build', detail: 'Connected optimizer core to SAP datasets and stress-tested penalty rules.' },
-  { label: 'Experience Pass', detail: 'Crafted the animated console you see now, tuned for demos and real ops.' }
+  {
+    phase: 'Olympiad roots · 2021-2023',
+    detail: 'Ana and Mihnea collect National Informatics Olympiad distinctions while Sergiu moderates Brainly and showcases STEM demos across Bucharest.'
+  },
+  {
+    phase: 'Engineering track · 2024',
+    detail: 'All three enroll in Computer Engineering (IoT) at UNSTPB/FILS, bringing DiscoverEU travel insights and math-info rigor to team projects.'
+  },
+  {
+    phase: 'Production internships · 2025',
+    detail: 'Mihnea joins Verasys to ship Payload CMS services, Sergiu runs Verasys integrations + Inventory Manager, and Ana presents dual projects at the Scientific Communication Session.'
+  },
+  {
+    phase: 'SkyKit build · Present',
+    detail: 'We merge those CV-proven chops into the SkyKit Optimizer—mixing TypeScript pipelines, IoT telemetry, and competition-tested UX craft.'
+  }
 ];
 
 export function AboutPage({ game, theme, onToggleTheme }: AboutPageProps) {
-  const { isConnected, state } = game;
-  const stats = state?.stats;
+  const { isConnected } = game;
 
   return (
     <PageShell>
@@ -49,55 +111,65 @@ export function AboutPage({ game, theme, onToggleTheme }: AboutPageProps) {
               <span className="inline-flex h-1 w-10 rounded-full bg-accent" /> About Our Crew
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight">
-              Building the SkyKit Optimizer experience
+              About our crew
             </h2>
             <p className="text-text-muted text-base max-w-3xl mt-3">
-              We fuse ops research, aviation know-how, and immersive product design to craft a simulator that feels alive
-              while staying faithful to the realities of rotable logistics. Our hackathon squad ships production-ready UI in days.
+              This console is powered by Ana-Antonia Duțu, Mihnea-Rafael Dunărințu, and Sergiu Lefter—three Computer Engineering (IoT)
+              students whose CVs span Verasys production work, Olympiad prizes, DiscoverEU travel, and a stack of React, Payload CMS,
+              MongoDB, and Gemini-based projects.
             </p>
           </header>
 
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="glass-card rounded-[28px] p-6 border border-border/70 space-y-6">
-              <p className="text-xs uppercase tracking-[0.3em] text-text-muted">How we work</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-text-muted">What our CVs bring</p>
               <div className="grid gap-4 sm:grid-cols-2">
-                {values.map(value => (
-                  <article key={value.label} className="rounded-[22px] border border-border/60 p-5">
-                    <h3 className="m-0 text-sm uppercase tracking-[0.2em] text-text-muted">{value.label}</h3>
-                    <p className="m-0 mt-2 text-base">{value.body}</p>
+                {focusAreas.map(area => (
+                  <article key={area.label} className="rounded-[22px] border border-border/60 p-5">
+                    <h3 className="m-0 text-sm uppercase tracking-[0.2em] text-text-muted">{area.label}</h3>
+                    <p className="m-0 mt-2 text-base">{area.body}</p>
                   </article>
                 ))}
               </div>
               <div className="rounded-[24px] border border-border/60 p-6">
                 <p className="m-0 text-xs uppercase tracking-[0.3em] text-text-muted">What drives us</p>
-                <p className="text-2xl font-semibold mt-2">Reduce disruption minutes · amplify readiness</p>
+                <p className="text-2xl font-semibold mt-2">Ship hackathon ideas with production-grade polish</p>
               </div>
             </div>
 
             <div className="glass-card rounded-[28px] p-6 border border-border/70 space-y-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Live Pulse</p>
-              <div className="rounded-[20px] border border-border/60 p-5">
-                <p className="m-0 text-text-muted text-sm">Current penalties</p>
-                <p className="m-0 text-3xl font-semibold">{stats ? stats.totalPenalties : 0}</p>
-              </div>
-              <div className="rounded-[20px] border border-border/60 p-5">
-                <p className="m-0 text-text-muted text-sm">Rounds completed</p>
-                <p className="m-0 text-3xl font-semibold">{stats ? stats.roundsCompleted : 0} / 720</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-text-muted">Team snapshot</p>
+              <div className="space-y-3">
+                {snapshot.map(item => (
+                  <div key={item.label} className="rounded-[20px] border border-border/60 p-4">
+                    <p className="m-0 text-text-muted text-xs uppercase tracking-[0.3em]">{item.label}</p>
+                    <p className="m-0 mt-1 text-base">{item.value}</p>
+                  </div>
+                ))}
               </div>
               <p className="text-text-muted text-sm">
-                These counters are streamed directly from our digital twin so teammates always know how the build behaves.
+                CV-backed experience means every animation and number inside SkyKit is accountable to real-world deliveries.
               </p>
             </div>
           </div>
 
           <div className="glass-card rounded-[28px] p-6 border border-border/70">
             <p className="text-xs uppercase tracking-[0.3em] text-text-muted mb-6">Meet the team</p>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               {teamMembers.map(member => (
-                <div key={member.name} className="rounded-[24px] border border-border/50 p-5">
-                  <p className="text-lg font-semibold m-0">{member.name}</p>
-                  <p className="text-text-muted text-sm m-0">{member.title}</p>
-                  <p className="m-0 mt-3 text-base">{member.focus}</p>
+                <div key={member.name} className="rounded-[24px] border border-border/50 p-5 space-y-3">
+                  <div>
+                    <p className="text-lg font-semibold m-0">{member.name}</p>
+                    <p className="text-text-muted text-sm m-0">{member.title}</p>
+                  </div>
+                  <p className="text-text-muted text-sm m-0">{member.education}</p>
+                  <p className="m-0 text-base">{member.summary}</p>
+                  <ul className="m-0 pl-5 text-sm text-text-muted space-y-1 list-disc">
+                    {member.highlights.map(highlight => (
+                      <li key={highlight}>{highlight}</li>
+                    ))}
+                  </ul>
+                  <p className="m-0 text-xs uppercase tracking-[0.3em] text-text-muted">Stack · <span className="text-text">{member.stack}</span></p>
                 </div>
               ))}
             </div>
@@ -107,10 +179,10 @@ export function AboutPage({ game, theme, onToggleTheme }: AboutPageProps) {
             <p className="text-xs uppercase tracking-[0.3em] text-text-muted mb-6">Hackathon timeline</p>
             <ol className="list-none m-0 space-y-5">
               {timeline.map((entry, index) => (
-                <li key={entry.label} className="relative pl-8">
+                <li key={entry.phase} className="relative pl-8">
                   <span className="absolute left-0 top-1.5 h-1.5 w-1.5 rounded-full bg-accent animate-pulse-opacity" />
                   <p className="m-0 text-sm uppercase tracking-[0.25em] text-text-muted">Phase {index + 1}</p>
-                  <h4 className="m-0 text-xl">{entry.label}</h4>
+                  <h4 className="m-0 text-xl">{entry.phase}</h4>
                   <p className="m-0 text-base text-text-muted">{entry.detail}</p>
                 </li>
               ))}
