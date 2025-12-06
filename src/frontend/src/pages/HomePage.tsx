@@ -93,6 +93,12 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
     { label: 'Penalties', value: `${gameState.stats.totalPenalties} • ${formatCost(gameState.stats.penaltyCost)}` }
   ];
 
+  const navButtonBase = 'rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition';
+  const navButtonDark =
+    'border border-[#3b82f6]/70 text-[#cfe0ff] shadow-[0_0_18px_rgba(56,189,248,0.25)] hover:border-[#7dd3fc] hover:text-white';
+  const navButtonLight = 'border border-border text-text-muted hover:text-text hover:border-accent';
+  const navButtonClass = `${navButtonBase} ${theme === 'dark' ? navButtonDark : navButtonLight}`;
+
   return (
     <PageShell>
       <SiteHeader isConnected={isConnected} theme={theme} onToggleTheme={onToggleTheme} />
@@ -102,7 +108,7 @@ export function HomePage({ game, theme, onToggleTheme }: HomePageProps) {
           <Link
             key={link.to}
             to={link.to}
-            className="rounded-full border border-border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-text-muted transition hover:text-text hover:border-accent"
+            className={navButtonClass}
           >
             {link.label}
           </Link>
