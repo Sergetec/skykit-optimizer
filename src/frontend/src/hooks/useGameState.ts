@@ -73,7 +73,7 @@ export interface GameStateSnapshot {
   recentPenalties: PenaltyInfo[];
 }
 
-interface UseGameStateResult {
+export interface UseGameStateResult {
   state: GameStateSnapshot | null;
   isLoading: boolean;
   error: string | null;

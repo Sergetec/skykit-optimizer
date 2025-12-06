@@ -1,0 +1,54 @@
+import { Link } from 'react-router-dom';
+import { InventoryPanel } from '../components/InventoryPanel';
+import { PageShell } from '../components/PageShell';
+import { SiteHeader } from '../components/SiteHeader';
+import type { UseGameStateResult } from '../hooks/useGameState';
+import type { Theme } from '../hooks/useTheme';
+
+type InventoryPageProps = {
+  game: UseGameStateResult;
+  theme: Theme;
+  onToggleTheme: () => void;
+};
+
+export function InventoryPage({ game, theme, onToggleTheme }: InventoryPageProps) {
+  const { state, isLoading, error, isConnected } = game;
+  const airports = state?.airports || [];
+
+  const backLink = (
+    <Link to="/" className="text-xs uppercase tracking-[0.2em] text-text-muted hover:text-text">
+      ← Back to dashboard
+    </Link>
+  );
+
+  return (
+    <PageShell>
+      <SiteHeader isConnected={isConnected} theme={theme} onToggleTheme={onToggleTheme} rightSlot={backLink} />
+
+      <section className="bg-gradient-to-br from-bg-alt/95 to-panel-dark/95 rounded-[34px] p-6 sm:p-10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02),0_30px_80px_rgba(6,6,10,0.7)]">
+        <div className="mb-6">
+          <p className="uppercase tracking-[0.2em] text-xs text-text-muted mb-0.5">Airport Inventory Overview</p>
+          <h2 className="mt-1 text-3xl">All stocked locations</h2>
+        </div>
+
+        {isLoading && (
+          <div className="text-text-muted text-sm">Loading inventory...</div>
+        )}
+
+        {!isLoading && error && !isConnected && (
+          <p className="text-danger">{error}</p>
+        )}
+
+        {!isLoading && (!airports || airports.length === 0) && (
+          <p className="text-text-muted">No airports available.</p>
+        )}
+
+        {airports.length > 0 && (
+          <InventoryPanel airports={airports} />
+        )}
+      </section>
+    </PageShell>
+  );
+}
+
+export default InventoryPage;
