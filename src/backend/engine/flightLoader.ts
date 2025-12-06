@@ -373,17 +373,21 @@ export class FlightLoader {
     const totalAtDest = destCurrent + inFlightToDestination + processingAtDest;
     const destRoom = Math.max(0, destCapacity - totalAtDest);
 
-    // Default thresholds for extra loading
+    // FIX 13: CRITICAL - Server adds landed kits to stock IMMEDIATELY
+    // Our local tracking shows 128 kits, but server has 882 (750+ kit difference!)
+    // Problem: We calculate totalAtDest = stock + inFlight + processing
+    // But server: stock already includes landed kits that we put in processing queue
+    //
+    // Solution: COMPLETELY DISABLE extra loading for Economy
+    // Economy overflow is 696 penalties = 73.58M (main problem!)
+    if (kitClass === 'economy') {
+      return 0;  // NO extra Economy kits to spokes - ever!
+    }
+
+    // For other classes, use moderate thresholds
     let saturationThreshold = 0.85;
     let roomCheckThreshold = 0.20;
     let maxExtraPercent = 0.05;
-
-    // FIX 13: Completely disable extra economy loading to prevent overflow
-    // Economy overflow causes $777/kit penalty - very expensive!
-    // The passenger demand loading already handles actual needs
-    if (kitClass === 'economy') {
-      return 0;  // NO extra Economy kits to spokes
-    }
 
     if (kitClass === 'premiumEconomy') {
       // PE also has some issues
