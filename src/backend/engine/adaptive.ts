@@ -44,11 +44,11 @@ interface AirportPerformance {
 export class AdaptiveEngine {
   // Penalty history (rolling window)
   private penaltyHistory: PenaltyRecord[] = [];
-  private readonly HISTORY_WINDOW = 48;  // 2 days of history
+  private readonly HISTORY_WINDOW = 72;  // 3 days of history
 
   // Per-round penalty totals for trend detection
   private roundPenalties: number[] = [];
-  private readonly TREND_WINDOW = 24;  // 1 day for trend analysis
+  private readonly TREND_WINDOW = 72;  // 3 zile pentru trend analysis stabil
 
   // Current strategy mode
   private strategyMode: StrategyMode = 'balanced';
@@ -109,57 +109,48 @@ export class AdaptiveEngine {
   }
 
   /**
-   * Main adaptation logic - analyzes trends and adjusts strategy
+   * Main adaptation logic - OPȚIUNEA C: doar per-airport learning
+   *
+   * DEZACTIVAT: Mode switching global (balanced/conservative/aggressive)
+   * PĂSTRAT: Per-airport performance tracking pentru risk scoring
+   *
+   * Motivație: Mode switching-ul cauzează oscilații care destabilizează algoritmul
+   * Per-airport learning e util pentru a identifica aeroporturi cu risc de overflow
    */
-  private analyzeAndAdapt(currentDay: number, currentHour: number): void {
-    if (this.roundPenalties.length < 6) return;  // Need enough data
+  private analyzeAndAdapt(_currentDay: number, _currentHour: number): void {
+    // DEZACTIVAT: Nu mai facem mode switching global
+    // Păstrăm bufferMultiplier și economyBufferBoost la 1.0 și 0
+    // Per-airport learning se face în updateAirportPerformance()
 
-    // Calculate recent vs older penalty averages
-    const recent = this.roundPenalties.slice(-6);
-    const older = this.roundPenalties.slice(-12, -6);
+    // NOTE: Dacă vrem să reactivăm mode switching în viitor,
+    // decomentăm codul de mai jos și ajustăm parametrii
 
+    /*
+    // Așteaptă 24 ore de date înainte de prima adaptare
+    if (this.roundPenalties.length < 24) return;
+
+    const recent = this.roundPenalties.slice(-12);
+    const older = this.roundPenalties.slice(-24, -12);
     const recentAvg = this.average(recent);
     const olderAvg = older.length > 0 ? this.average(older) : recentAvg;
 
-    // Determine strategy based on trend
     const previousMode = this.strategyMode;
 
-    if (recentAvg > olderAvg * 1.3) {
-      // Penalties increasing significantly - go conservative
+    if (recentAvg > olderAvg * 1.5) {
       this.strategyMode = 'conservative';
-      this.bufferMultiplier = Math.min(1.2, this.bufferMultiplier + 0.05);
-    } else if (recentAvg < olderAvg * 0.7 && this.strategyMode !== 'aggressive') {
-      // Penalties decreasing - can be more aggressive
+      this.bufferMultiplier = Math.min(1.15, this.bufferMultiplier + 0.02);
+    } else if (recentAvg < olderAvg * 0.5 && this.strategyMode !== 'aggressive') {
       this.strategyMode = 'aggressive';
-      this.bufferMultiplier = Math.max(0.9, this.bufferMultiplier - 0.03);
+      this.bufferMultiplier = Math.max(0.95, this.bufferMultiplier - 0.01);
     } else {
       this.strategyMode = 'balanced';
-      // Slowly return to neutral
-      this.bufferMultiplier = this.bufferMultiplier * 0.98 + 1.0 * 0.02;
+      this.bufferMultiplier = this.bufferMultiplier * 0.95 + 1.0 * 0.05;
     }
 
-    // Analyze overflow patterns for economy
-    const recentOverflows = this.penaltyHistory.filter(
-      p => p.type === 'INVENTORY_EXCEEDS_CAPACITY' &&
-           p.day >= currentDay - 1
-    );
-
-    const economyOverflows = recentOverflows.filter(p => p.kitClass === 'economy');
-
-    if (economyOverflows.length > 5) {
-      // Many economy overflows - boost economy buffer
-      this.economyBufferBoost = Math.min(0.15, this.economyBufferBoost + 0.02);
-    } else if (economyOverflows.length === 0 && this.economyBufferBoost > 0) {
-      // No economy overflows - can reduce boost
-      this.economyBufferBoost = Math.max(0, this.economyBufferBoost - 0.01);
-    }
-
-    // Log adaptation if mode changed
     if (previousMode !== this.strategyMode) {
-      console.log(`[ADAPTIVE] Mode: ${previousMode} → ${this.strategyMode} | ` +
-                  `Buffer: ${(this.bufferMultiplier * 100).toFixed(0)}% | ` +
-                  `Economy boost: -${(this.economyBufferBoost * 100).toFixed(0)}%`);
+      console.log(`[ADAPTIVE] Mode: ${previousMode} → ${this.strategyMode}`);
     }
+    */
   }
 
   /**
