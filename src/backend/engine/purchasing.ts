@@ -153,13 +153,12 @@ export class PurchasingManager {
     };
 
     const leadTime = LEAD_TIMES[kitClass];
-    // Burst window: expanded from +12h to +24h for more aggressive end-game purchasing
-    const isNearDeadline = hoursRemaining >= leadTime && hoursRemaining <= leadTime + 24;
+    // Burst window: when we're within 12 hours of the lead time deadline
+    const isNearDeadline = hoursRemaining >= leadTime && hoursRemaining <= leadTime + 12;
 
     if (isNearDeadline) {
       const maxToBuy = maxTotalPurchase - this.totalPurchased[kitClass];
-      // OPTIMIZED: 3x multiplier instead of 2x to reduce Day 28-29 UNFULFILLED spike
-      const burstAmount = Math.min(maxPerOrder * 3, maxToBuy, apiLimit, maxRoom);
+      const burstAmount = Math.min(maxPerOrder * 2, maxToBuy, apiLimit, maxRoom); // Double the normal order
 
       if (burstAmount > 0) {
         console.log(`[PURCHASE END-GAME BURST] Day ${currentDay} Hour ${currentHour}: Ordering ${burstAmount} ${kitClass} kits (${hoursRemaining}h remaining, lead time ${leadTime}h)`);

@@ -47,17 +47,15 @@ export class FlightLoader {
     const loads: FlightLoadDto[] = [];
 
     // EARLY-GAME FLAGS:
-    // - isEarlyGame: Day 0-1 - don't send extra kits to spokes, preserve HUB1 stock
-    // FIX: Reduced from Day 0-2 to Day 0-1 to allow spoke distribution earlier
-    const isEarlyGame = currentDay <= 1;
+    // - isEarlyGame: Day 0-2 - don't send extra kits to spokes, preserve HUB1 stock
+    const isEarlyGame = currentDay <= 2;
 
     // END-GAME FLAGS:
     // - isLastDay: Day 29 - game ends, don't send extra kits anywhere
-    // - isNearEnd: Day 25+ - STOP extra loading to prevent spoke overflow
+    // - isNearEnd: Day 20+ - STOP extra loading to prevent spoke overflow (was Day 28)
     // - isEndGame: Day 27+ - start returning kits to HUB1
-    // FIX: Changed isNearEnd from Day 15 to Day 25 - was blocking spoke distribution too early!
     const isLastDay = currentDay >= 29;
-    const isNearEnd = currentDay >= 25;  // FIX: Was 15, caused spoke starvation Day 15-24
+    const isNearEnd = currentDay >= 15;  // Original value
     const isEndGame = currentDay >= 27;
 
     // Sort flights by priority
@@ -197,18 +195,16 @@ export class FlightLoader {
     const rawAvailable = originStock[kitClass];
 
     // Safety buffer to avoid negative inventory
-    // Calculate buffer as percentage of airport capacity for robustness on different datasets
+    // Buffer can be absolute (100, 20) or percentage (0.01, 0.03) - detect and apply accordingly
     const isHub = flight.originAirport === 'HUB1';
     const originAirport = this.inventoryManager.getAirport(flight.originAirport);
-    const airportCapacity = originAirport ? originAirport.capacity[kitClass] : 1000; // fallback
+    const airportCapacity = originAirport ? originAirport.capacity[kitClass] : 1000;
 
-    // safetyBuffer.hub/spoke are now percentages (0.01, 0.03) or absolute values (100, 20)
-    // Check if they look like percentages (< 1) or absolute values
     const bufferConfig = isHub ? this.config.safetyBuffer.hub : this.config.safetyBuffer.spoke;
-    const isPercentage = bufferConfig < 1;
+    const isPercentage = bufferConfig < 1; // Values < 1 are percentages
     const baseBuffer = isPercentage
-      ? Math.max(5, Math.floor(airportCapacity * bufferConfig))  // percentage of capacity
-      : bufferConfig;  // absolute value (backwards compatible)
+      ? Math.max(5, Math.floor(airportCapacity * bufferConfig))
+      : bufferConfig;
 
     // EARLY-GAME: Use larger buffer (5% of capacity or 500 min) to protect HUB1 stock
     const earlyGameBuffer = Math.max(500, Math.floor(airportCapacity * 0.05));
@@ -374,25 +370,27 @@ export class FlightLoader {
     const totalAtDest = destCurrent + inFlightToDestination + processingAtDest;
     const destRoom = Math.max(0, destCapacity - totalAtDest);
 
-    // FIX 25: Re-enable Economy with conservative limits
-    // Previous: Completely disabled economy extra loading → caused 1309 UNFULFILLED penalties ($50M)
-    // New approach: Allow economy but with strict limits to prevent overflow
+    // FIX 13: CRITICAL - Server adds landed kits to stock IMMEDIATELY
+    // Our local tracking shows 128 kits, but server has 882 (750+ kit difference!)
+    // Problem: We calculate totalAtDest = stock + inFlight + processing
+    // But server: stock already includes landed kits that we put in processing queue
+    //
+    // Solution: COMPLETELY DISABLE extra loading for Economy
+    // Economy overflow is 696 penalties = 73.58M (main problem!)
+    if (kitClass === 'economy') {
+      return 0;  // NO extra Economy kits to spokes - ever!
+    }
 
-    // Base thresholds - adjusted per class
+    // For other classes, use moderate thresholds
     let saturationThreshold = 0.85;
     let roomCheckThreshold = 0.20;
     let maxExtraPercent = 0.05;
 
-    if (kitClass === 'economy') {
-      // Economy: Very conservative to prevent overflow, but not zero
-      saturationThreshold = 0.60;  // Stop if spoke > 60% full
-      roomCheckThreshold = 0.45;   // Need 45% room available
-      maxExtraPercent = 0.02;      // Only 2% of capacity per flight
-    } else if (kitClass === 'premiumEconomy') {
-      // PE: Increased from previous limits
-      saturationThreshold = 0.80;  // Was 0.75
-      roomCheckThreshold = 0.25;   // Was 0.30
-      maxExtraPercent = 0.05;      // Was 0.02 - 2.5x increase
+    if (kitClass === 'premiumEconomy') {
+      // PE also has some issues
+      saturationThreshold = 0.75;
+      roomCheckThreshold = 0.30;
+      maxExtraPercent = 0.02;
     }
 
     // Hard stop if spoke is already at saturation threshold

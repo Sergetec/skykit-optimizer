@@ -58,7 +58,7 @@ app.get('/api/state', (_req: Request, res: Response) => {
       stats: currentStats,
       airports: [],
       activeFlights: [],
-      events: recentEvents.slice(-50),
+      events: recentEvents,
       recentPenalties: [],
       penaltiesByDay: penaltiesByDay
     } as GameStateSnapshot);
@@ -75,8 +75,8 @@ app.get('/api/state', (_req: Request, res: Response) => {
     stats: currentStats,
     airports: getAirportStocks(),
     activeFlights: getActiveFlights(),
-    events: recentEvents.slice(-50),
-    recentPenalties: recentPenalties.slice(-20),
+    events: recentEvents,
+    recentPenalties: recentPenalties,
     penaltiesByDay: penaltiesByDay
   };
 
@@ -95,12 +95,12 @@ app.get('/api/stats', (_req: Request, res: Response) => {
 
 // Get just events
 app.get('/api/events', (_req: Request, res: Response) => {
-  res.json(recentEvents.slice(-50));
+  res.json(recentEvents);
 });
 
 // Get just penalties
 app.get('/api/penalties', (_req: Request, res: Response) => {
-  res.json(recentPenalties.slice(-20));
+  res.json(recentPenalties);
 });
 
 // Helper: Convert game state airports to API format
@@ -219,20 +219,12 @@ export function updateStats(stats: Partial<GameStats>): void {
 
 export function addEvent(event: GameEvent): void {
   recentEvents.push(event);
-  // Keep only last 100 events in memory
-  if (recentEvents.length > 100) {
-    recentEvents = recentEvents.slice(-100);
-  }
 }
 
 export function addPenalty(penalty: PenaltyInfo): void {
   recentPenalties.push(penalty);
-  // Keep only last 50 penalties in memory for recentPenalties
-  if (recentPenalties.length > 50) {
-    recentPenalties = recentPenalties.slice(-50);
-  }
 
-  // Also store in penaltiesByDay (ALL penalties, no limit)
+  // Also store in penaltiesByDay
   const day = penalty.issuedDay;
   if (!penaltiesByDay[day]) {
     penaltiesByDay[day] = [];

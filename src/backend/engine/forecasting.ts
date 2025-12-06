@@ -14,6 +14,7 @@ export class DemandForecaster {
   private flightPlans: FlightPlan[];
 
   // Track observed passenger counts for adaptive demand estimation
+  // This makes the algorithm robust to different datasets
   private observedDemands: Record<keyof PerClassAmount, number[]> = {
     first: [],
     business: [],
@@ -29,8 +30,9 @@ export class DemandForecaster {
   }
 
   /**
-   * Record observed passenger counts from actual flights (for adaptive learning)
+   * Record observed passenger counts from actual flights
    * Call this when SCHEDULED or CHECKED_IN events are received
+   * This enables adaptive learning for different datasets
    */
   recordObservedDemand(passengers: PerClassAmount): void {
     for (const kitClass of KIT_CLASSES) {
@@ -56,7 +58,6 @@ export class DemandForecaster {
 
     // Need at least 5 observations for meaningful average
     if (observations.length >= 5) {
-      // Use cached average if available
       if (!this.cachedAverages) {
         this.cachedAverages = {
           first: this.calculateAverage(this.observedDemands.first),
