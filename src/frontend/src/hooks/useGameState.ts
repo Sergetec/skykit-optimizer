@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-
-const API_BASE_URL = 'http://localhost:3001';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { API_BASE_URL, POLL_INTERVAL_RUNNING } from '../constants/config';
 
 // Types matching shared/types.ts
 export interface PerClassAmount {
@@ -87,6 +86,7 @@ export interface UseGameStateResult {
   error: string | null;
   isConnected: boolean;
   refresh: () => Promise<void>;
+  retry: () => void;
   startGame: () => Promise<{ success: boolean; message: string }>;
 }
 
@@ -96,10 +96,21 @@ export function useGameState(pollInterval: number = 2000): UseGameStateResult {
   const [error, setError] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isTabVisible, setIsTabVisible] = useState(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchState = useCallback(async () => {
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/state`);
+      const response = await fetch(`${API_BASE_URL}/api/state`, {
+        signal: abortControllerRef.current.signal,
+      });
       if (!response.ok) {
         throw new Error(`HTTP error: ${response.status}`);
       }
@@ -108,12 +119,23 @@ export function useGameState(pollInterval: number = 2000): UseGameStateResult {
       setIsConnected(true);
       setError(null);
     } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to connect to backend');
       setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Manual retry function
+  const retry = useCallback(() => {
+    setIsLoading(true);
+    setError(null);
+    fetchState();
+  }, [fetchState]);
 
   // Page Visibility API - pause polling when tab is hidden
   useEffect(() => {
@@ -131,11 +153,17 @@ export function useGameState(pollInterval: number = 2000): UseGameStateResult {
     // Only poll if tab is visible
     if (!isTabVisible) return;
 
-    // Use faster polling (1s) when game is running, slower (2s) otherwise
-    const actualInterval = state?.isRunning ? 1000 : pollInterval;
+    // Use faster polling when game is running, slower otherwise
+    const actualInterval = state?.isRunning ? POLL_INTERVAL_RUNNING : pollInterval;
     const interval = setInterval(fetchState, actualInterval);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // Cleanup: abort any pending request on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchState, pollInterval, isTabVisible, state?.isRunning]);
 
   const startGame = useCallback(async (): Promise<{ success: boolean; message: string }> => {
@@ -160,6 +188,7 @@ export function useGameState(pollInterval: number = 2000): UseGameStateResult {
     error,
     isConnected,
     refresh: fetchState,
+    retry,
     startGame
   };
 }

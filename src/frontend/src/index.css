@@ -60,7 +60,7 @@ html {
 
 /* Animations */
 @keyframes pulse-opacity {
-  0%, 100% { opacity: 2; }
+  0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 
@@ -408,7 +408,7 @@ html {
 }
 
 :root[data-theme='light'] .flight-plane {
-  opacity: 0;
+  opacity: 0.35;
   filter: drop-shadow(0 8px 18px rgba(46, 180, 255, 0.28));
 }
 

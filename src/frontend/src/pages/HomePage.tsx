@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { SimControls } from '../components/SimControls';
 import { PageShell } from '../components/PageShell';
 import { SiteHeader } from '../components/SiteHeader';
 import { getDashboardNavLinks } from '../data/navLinks';
+import { formatCost } from '../utils/formatting';
+import { TOTAL_ROUNDS, COMPACT_NAV_BREAKPOINT } from '../constants/config';
 import type { UseGameStateResult } from '../hooks/useGameState';
 import type { Theme } from '../hooks/useTheme';
 import type { Language } from '../hooks/useLanguage';
@@ -42,26 +44,19 @@ const defaultGameState = {
   penaltiesByDay: {}
 };
 
-const formatCost = (value: number): string => {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(2)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`;
-  }
-  return `$${value.toFixed(0)}`;
-};
-
 export function HomePage({ game, theme, onToggleTheme, language, onToggleLanguage }: HomePageProps) {
-  const { state, isLoading, error, isConnected, startGame } = game;
-  const t = <T,>(values: { en: T; ro: T }) => pickLanguage(language, values);
+  const { state, isLoading, error, isConnected, startGame, retry } = game;
+  const t = useCallback(<T,>(values: { en: T; ro: T }) => pickLanguage(language, values), [language]);
   const [isCompactNav, setIsCompactNav] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+
+  // Memoize nav links to prevent unnecessary recalculations
+  const navLinks = useMemo(() => getDashboardNavLinks(language), [language]);
 
   // IMPORTANT: All hooks must be called before any early returns (React rules)
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
-    const media = window.matchMedia('(max-width: 1065px)');
+    const media = window.matchMedia(`(max-width: ${COMPACT_NAV_BREAKPOINT}px)`);
     const update = () => setIsCompactNav(media.matches);
     update();
     media.addEventListener('change', update);
@@ -119,18 +114,23 @@ export function HomePage({ game, theme, onToggleTheme, language, onToggleLanguag
             <code className="bg-panel px-2 py-1 rounded">npm run backend</code>{' '}
             {t({ en: 'to start the backend server.', ro: 'pentru a porni serviciul backend.' })}
           </p>
-          <p className="text-danger text-sm mt-4">
+          <p className="text-danger text-sm mt-4" role="alert">
             {t({ en: 'Error', ro: 'Eroare' })}: {error}
           </p>
+          <button
+            onClick={retry}
+            className="mt-6 px-6 py-2.5 rounded-full bg-accent text-[#001121] font-semibold text-sm hover:bg-accent/90 transition hover:-translate-y-0.5"
+          >
+            {t({ en: 'Retry connection', ro: 'Reîncearcă conexiunea' })}
+          </button>
         </section>
       </PageShell>
     );
   }
 
   const gameState = state || defaultGameState;
-  const navLinks = getDashboardNavLinks(language);
 
-  const progress = Math.max(0, Math.min(1, gameState.stats.roundsCompleted / 720 || 0));
+  const progress = Math.max(0, Math.min(1, gameState.stats.roundsCompleted / TOTAL_ROUNDS || 0));
 
   const loadingCost = gameState.stats.transportCost;
   const processingCost = gameState.stats.processingCost;
@@ -313,7 +313,7 @@ export function HomePage({ game, theme, onToggleTheme, language, onToggleLanguag
             <div className="glass-card float-card rounded-3xl p-6 border border-border/70">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs uppercase tracking-[0.3em] text-text-muted">{t({ en: 'Status', ro: 'Stare' })}</p>
-                <span className="text-sm font-mono text-text-muted">{t({ en: `Round ${gameState.stats.roundsCompleted} / 720`, ro: `Runda ${gameState.stats.roundsCompleted} / 720` })}</span>
+                <span className="text-sm font-mono text-text-muted">{t({ en: `Round ${gameState.stats.roundsCompleted} / ${TOTAL_ROUNDS}`, ro: `Runda ${gameState.stats.roundsCompleted} / ${TOTAL_ROUNDS}` })}</span>
               </div>
               <p className="text-2xl font-semibold mb-6">
                 {gameState.isComplete

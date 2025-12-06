@@ -1,19 +1,11 @@
 import type { GameStats } from '../hooks/useGameState';
+import { formatCost } from '../utils/formatting';
+import { TOTAL_ROUNDS } from '../constants/config';
 
 interface StatsGridProps {
   stats: GameStats;
   day: number;
   hour: number;
-}
-
-function formatCost(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(2)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(1)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
 
 export function StatsGrid({ stats, day, hour }: StatsGridProps) {
@@ -30,7 +22,7 @@ export function StatsGrid({ stats, day, hour }: StatsGridProps) {
     ]),
     { label: 'Penalties', value: formatCost(stats.penaltyCost), isDanger: stats.penaltyCost > 0 },
     { label: 'Penalty Count', value: stats.totalPenalties.toString() },
-    { label: 'Rounds Completed', value: `${stats.roundsCompleted} / 720` },
+    { label: 'Rounds Completed', value: `${stats.roundsCompleted} / ${TOTAL_ROUNDS}` },
     { label: 'Current Day', value: `Day ${day}` },
     { label: 'Current Hour', value: `${hour}:00` },
   ];

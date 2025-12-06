@@ -1,5 +1,7 @@
 import type { Language } from '../hooks/useLanguage';
 import { pickLanguage } from '../i18n/utils';
+import { TOTAL_ROUNDS } from '../constants/config';
+import { formatPercent } from '../utils/formatting';
 
 interface SimControlsProps {
   isStarting: boolean;
@@ -41,9 +43,10 @@ export function SimControls({ isStarting, isRunning, isComplete, round, onStartG
     ? pickLanguage(language, { en: 'Completed', ro: 'Finalizat' })
     : pickLanguage(language, { en: 'Start simulation', ro: 'Pornește simularea' });
 
+  const progress = round / TOTAL_ROUNDS;
   const progressText = pickLanguage(language, {
-    en: `Round ${round} / 720 (${((round / 720) * 100).toFixed(1)}% complete)`,
-    ro: `Runda ${round} / 720 (${((round / 720) * 100).toFixed(1)}% finalizat)`
+    en: `Round ${round} / ${TOTAL_ROUNDS} (${formatPercent(progress)} complete)`,
+    ro: `Runda ${round} / ${TOTAL_ROUNDS} (${formatPercent(progress)} finalizat)`
   });
 
   return (
@@ -61,9 +64,11 @@ export function SimControls({ isStarting, isRunning, isComplete, round, onStartG
         <button
           onClick={handleStart}
           disabled={isDisabled}
+          aria-label={buttonText}
+          aria-busy={isStarting || isRunning}
           className={`px-6 py-3 text-base font-semibold border border-transparent rounded-full transition-transform ${
             isDisabled
-              ? 'bg-text-muted/30 text-text-muted cursor-not-allowed'
+              ? 'bg-border/50 text-text-muted/80 cursor-not-allowed border-border/30'
               : 'bg-accent text-[#001121] cursor-pointer shadow-[0_10px_30px_rgba(46,180,255,0.35)] hover:-translate-y-0.5'
           }`}
         >
