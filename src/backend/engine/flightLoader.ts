@@ -85,7 +85,10 @@ export class FlightLoader {
   /**
    * Sort flights by priority for loading
    * - HUB1 departures first (distribute kits to spokes)
-   * - Then by distance (higher penalty if unfulfilled)
+   * - Then by PENALTY EXPOSURE (not just distance)
+   *
+   * Penalty exposure = passengers × distance × class_factor
+   * This ensures high-value flights get loaded first when stock is abundant
    */
   private sortFlightsByPriority(flights: FlightEvent[]): FlightEvent[] {
     return [...flights].sort((a, b) => {
@@ -93,11 +96,41 @@ export class FlightLoader {
       if (a.originAirport === 'HUB1' && b.originAirport !== 'HUB1') return -1;
       if (b.originAirport === 'HUB1' && a.originAirport !== 'HUB1') return 1;
 
-      // Then by distance
-      const distA = this.demandForecaster.getFlightDistance(a.originAirport, a.destinationAirport);
-      const distB = this.demandForecaster.getFlightDistance(b.originAirport, b.destinationAirport);
-      return distB - distA;
+      // Then by penalty exposure (higher exposure = higher priority)
+      const exposureA = this.calculatePenaltyExposure(a);
+      const exposureB = this.calculatePenaltyExposure(b);
+      return exposureB - exposureA;
     });
+  }
+
+  /**
+   * Calculate penalty exposure for a flight
+   * Higher exposure = more costly if unfulfilled
+   *
+   * Formula: sum(passengers[class] × distance × penaltyFactor[class])
+   * Penalty factors derived from actual game penalty rates
+   */
+  private calculatePenaltyExposure(flight: FlightEvent): number {
+    const distance = this.demandForecaster.getFlightDistance(
+      flight.originAirport,
+      flight.destinationAirport
+    );
+
+    // Penalty factors per kit class (relative cost if unfulfilled)
+    // First class unfulfilled is ~3x more expensive than economy per kit
+    const factors: Record<keyof PerClassAmount, number> = {
+      first: 0.010,         // Highest penalty per kit
+      business: 0.006,
+      premiumEconomy: 0.004,
+      economy: 0.003        // Lowest but highest volume
+    };
+
+    let exposure = 0;
+    for (const kitClass of KIT_CLASSES) {
+      exposure += flight.passengers[kitClass] * distance * factors[kitClass];
+    }
+
+    return exposure;
   }
 
   /**
@@ -272,12 +305,12 @@ export class FlightLoader {
     }
 
     // OPTIMIZATION: For flights FROM HUB1, load extra kits for destination deficit
-    // BUT: On Day 28+ (isNearEnd), significantly reduce or stop extra loading
+    // Hard cutoff at Day 15 - tapering tested but performed worse
     if (this.config.enableExtraLoadingToSpokes &&
         flight.originAirport === 'HUB1' &&
         toLoad < capacity &&
         available > toLoad &&
-        !isNearEnd) {  // STOP extra loading on Day 28+
+        !isNearEnd) {
       const extraKits = this.calculateExtraKitsForDestination(
         flight,
         kitClass,
@@ -290,6 +323,9 @@ export class FlightLoader {
       );
       toLoad += extraKits;
     }
+
+    // NOTE: Spoke-to-spoke redistribution code removed - network is pure hub-and-spoke
+    // All flights are either HUB1→Spoke or Spoke→HUB1, no spoke-to-spoke routes exist
 
     // OPTIMIZATION: For flights TO HUB1, load extra kits to bring back
     if (this.config.enableReturnToHub &&
@@ -349,6 +385,8 @@ export class FlightLoader {
     const forecastHours = Math.min(this.config.destinationForecastHours, remainingHours);
 
     // Calculate destination's demand within adjusted forecast window
+    // NOTE: Kits are consumed at DEPARTURE, not arrival. When passengers board
+    // a flight at SpokeX, they need kits at SpokeX. So we forecast departures FROM spoke.
     const destDemand = this.demandForecaster.calculateDemandForAirport(
       flight.destinationAirport,
       currentDay,

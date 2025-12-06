@@ -137,6 +137,67 @@ export class DemandForecaster {
   }
 
   /**
+   * Calculate INBOUND demand for an airport (arrivals INTO the airport)
+   * This is what we need for pre-positioning kits at spokes - passengers ARRIVING need kits
+   *
+   * CRITICAL FIX: The original calculateDemandForAirport counts DEPARTURES, but
+   * kits are consumed by ARRIVING passengers, not departing ones!
+   */
+  calculateInboundDemandForAirport(
+    airportCode: string,
+    currentDay: number,
+    currentHour: number,
+    withinHours: number,
+    kitClass: keyof PerClassAmount,
+    knownFlights: Map<string, FlightEvent>
+  ): number {
+    let demand = 0;
+
+    const targetDay = currentDay + Math.floor((currentHour + withinHours) / 24);
+    const targetHour = (currentHour + withinHours) % 24;
+
+    // Use known flights - count ARRIVALS to this airport
+    for (const flight of knownFlights.values()) {
+      if (flight.destinationAirport === airportCode) {  // ARRIVALS, not departures!
+        const arrivesInWindow = (flight.arrival.day < targetDay) ||
+                               (flight.arrival.day === targetDay && flight.arrival.hour <= targetHour);
+        const arrivesAfterNow = (flight.arrival.day > currentDay) ||
+                               (flight.arrival.day === currentDay && flight.arrival.hour >= currentHour);
+
+        if (arrivesInWindow && arrivesAfterNow) {
+          demand += flight.passengers[kitClass];
+        }
+      }
+    }
+
+    // Also use flight plan for forecasting beyond known flights
+    let checkHour = currentHour;
+    let checkDay = currentDay;
+
+    for (let h = 0; h < withinHours; h++) {
+      const weekdayIndex = checkDay % 7;
+
+      for (const plan of this.flightPlans) {
+        // Count flights ARRIVING at this airport (arrivalCode, not departCode)
+        if (plan.arrivalCode === airportCode &&
+            plan.scheduledArrivalHour === checkHour &&
+            plan.weekdays[weekdayIndex]) {
+          const estimate = this.getDynamicDemandEstimate(kitClass);
+          demand += estimate;
+        }
+      }
+
+      checkHour++;
+      if (checkHour >= 24) {
+        checkHour = 0;
+        checkDay++;
+      }
+    }
+
+    return demand;
+  }
+
+  /**
    * Calculate total upcoming demand for all kit classes
    */
   calculateTotalDemand(
