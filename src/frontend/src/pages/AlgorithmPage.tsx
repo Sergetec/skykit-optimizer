@@ -33,38 +33,38 @@ type PillarCard = {
 const copy = {
   en: {
     heroBadge: 'Inside the optimizer',
-    heroTitle: 'Algorithm playbook',
+    heroTitle: 'How the algorithm works',
     heroIntro:
-      'SkyKit prioritizes rotable kits with a demand-aware heuristic. The stack ingests IoT telemetry, predicts stress windows, locks routing constraints, then simulates thousands of swaps to keep fleets green.',
-    heroFootnote: 'Use the carousel to see how each stage contributes to the final routing instructions.',
-    prevLabel: 'Previous insight',
-    nextLabel: 'Next insight',
+      'SkyKit optimizes rotable kit distribution across a hub-spoke airport network. The algorithm analyzes flight schedules, forecasts demand per kit class, makes purchasing decisions respecting lead times, and calculates optimal loading for each flight to minimize penalties.',
+    heroFootnote: 'Use the carousel to explore each stage of the optimization pipeline.',
+    prevLabel: 'Previous step',
+    nextLabel: 'Next step',
     dotLabel: 'Go to slide',
-    slideLabel: 'Slide',
-    pillarTitle: 'Operational guardrails',
-    pledgeTitle: 'What the solver guarantees',
+    slideLabel: 'Step',
+    pillarTitle: 'Operational constraint',
+    pledgeTitle: 'Core principles',
     pledgeItems: [
-      'Respect max-lag per aircraft tail and ensure safety buffers on critical kits.',
-      'Prefer swaps that avoid penalty bursts beyond the current round horizon.',
-      'Feed each simulation back into the scoring model to avoid oscillations.'
+      'Never exceed airport capacity limits — overflow penalty ($777/kit) is the most expensive.',
+      'Respect lead times: only purchase kits that will arrive before the game ends.',
+      'Prioritize hub-to-spoke distribution to prevent stock shortages at spoke airports.'
     ]
   },
   ro: {
     heroBadge: 'În interiorul optimizerului',
-    heroTitle: 'Playbook-ul algoritmului',
+    heroTitle: 'Cum funcționează algoritmul',
     heroIntro:
-      'SkyKit prioritizează kiturile rotabile cu un algoritm sensibil la cerere. Stiva colectează telemetria IoT, prezice intervalele critice, aplică constrângeri de rutare și simulează mii de schimburi pentru a menține flotele operaționale.',
-    heroFootnote: 'Folosește caruselul pentru a vedea cum contribuie fiecare etapă la instrucțiunile finale de rutare.',
-    prevLabel: 'Insight anterior',
-    nextLabel: 'Insight următor',
+      'SkyKit optimizează distribuția kiturilor rotabile într-o rețea de aeroporturi hub-spoke. Algoritmul analizează programul de zboruri, prognozează cererea per clasă de kit, ia decizii de achiziție respectând lead times, și calculează încărcarea optimă pentru fiecare zbor pentru a minimiza penalitățile.',
+    heroFootnote: 'Folosește caruselul pentru a explora fiecare etapă a pipeline-ului de optimizare.',
+    prevLabel: 'Pasul anterior',
+    nextLabel: 'Pasul următor',
     dotLabel: 'Mergi la slide',
-    slideLabel: 'Slide',
-    pillarTitle: 'Ghidaje operaționale',
-    pledgeTitle: 'Ce garantează solver-ul',
+    slideLabel: 'Pasul',
+    pillarTitle: 'Constrângere operațională',
+    pledgeTitle: 'Principii de bază',
     pledgeItems: [
-      'Respectă întârzierea maximă per aeronavă și păstrează rezerve pe kiturile critice.',
-      'Preferă schimburi care evită vârfuri de penalizare în orizontul rundei curente.',
-      'Trimite fiecare simulare înapoi în scor pentru a nu crea oscilații.'
+      'Nu depășim niciodată capacitatea aeroporturilor — penalitatea de overflow ($777/kit) este cea mai scumpă.',
+      'Respectăm lead times: cumpărăm doar kituri care vor ajunge înainte de finalul jocului.',
+      'Prioritizăm distribuția hub-spre-spoke pentru a preveni lipsa de stoc la aeroporturile spoke.'
     ]
   }
 };
@@ -72,149 +72,149 @@ const copy = {
 const carouselSlides = {
   en: [
     {
-      id: 'collect',
-      badge: 'Data intake',
-      title: '1 · Collect kit signals',
-      headline: 'We pull IoT health, flight schedules, weather, and manual notes every few seconds.',
+      id: 'calibrate',
+      badge: 'Calibration',
+      title: '1 · Analyze the dataset',
+      headline: 'We parse CSV files and auto-calibrate parameters for this specific network.',
       description:
-        'Each feed enters a queue so nothing is lost when a sensor blips. The result is a complete snapshot of every airport bay before we decide anything.',
+        'The calibrator analyzes airport capacities, flight routes, and distances to identify the hub-spoke topology. It calculates optimal thresholds and load factors tailored to the dataset.',
       notes: [
-        'Missing numbers are backfilled with the last trusted reading.',
-        'Ops teams can override a sensor by leaving a quick note in the console.'
-      ]
-    },
-    {
-      id: 'clean',
-      badge: 'Cleaning',
-      title: '2 · Clean and align the data',
-      headline: 'We smooth noisy curves and convert everything to the same scale.',
-      description:
-        'Simple moving averages and z-score checks catch spikes. We also convert costs, time zones, and kit families so the solver sees apples-to-apples inputs.',
-      notes: [
-        'If a value sits outside the safe band we flag it and keep the last good value.',
-        'Weather alerts apply a “confidence tax” so the solver knows the data might drift.'
+        'Network topology is detected automatically (hub vs spoke airports).',
+        'Route economics (penalty/cost ratio) determine loading strategies.'
       ]
     },
     {
       id: 'forecast',
-      badge: 'Demand look-ahead',
-      title: '3 · Forecast kit usage',
-      headline: 'A light attention model predicts which airports will run hot or cold in the next 72h.',
+      badge: 'Demand forecasting',
+      title: '2 · Forecast kit demand',
+      headline: 'We estimate future demand at each airport using flight data.',
       description:
-        'We combine historical swaps, current flights, and penalty history to get a consumption curve per kit family. The curve becomes the pressure map for all routing.',
+        'For known flights (received events), we calculate exact passenger counts. For future flights, we use the flight plan schedule. Demand is calculated separately for each kit class: First, Business, Premium Economy, and Economy.',
       notes: [
-        'Lead times and shipping duration turn into soft buffers on the curve.',
-        'The model outputs both a central estimate and a risk band.'
+        'Inbound demand: kits arriving on incoming flights.',
+        'Outbound demand: kits needed for departing passengers.'
       ]
     },
     {
-      id: 'constraints',
-      badge: 'Constraints',
-      title: '4 · Build the constraint board',
-      headline: 'Simple rules keep the solver grounded in reality.',
+      id: 'purchase',
+      badge: 'Purchasing',
+      title: '3 · Make purchasing decisions',
+      headline: 'We buy kits when stock falls below class-specific thresholds.',
       description:
-        'We pin aircraft that are under maintenance, lock kits already promised to a flight, and mark depots that are at capacity. Customs or night curfews become time windows.',
+        'Each kit class has different thresholds (First: 10%, Business: 33%, Premium Economy: 40%, Economy: 70% of capacity) and lead times (48h, 36h, 24h, 12h respectively). Purchases are only made if kits will arrive before the game ends.',
       notes: [
-        'Rules are editable so operations can temporarily lift a limit.',
-        'We annotate every rule with its source for easy auditing.'
+        'Early-game: aggressive purchasing to build initial stock.',
+        'End-game: final burst before lead time deadlines.'
       ]
     },
     {
-      id: 'simulate',
-      badge: 'Solver loop',
-      title: '5 · Simulate swap plans',
-      headline: 'Greedy restarts + simulated annealing explore thousands of possible moves.',
+      id: 'load',
+      badge: 'Flight loading',
+      title: '4 · Calculate optimal loading',
+      headline: 'We determine how many kits to load on each departing flight.',
       description:
-        'We score each plan on cost, penalty avoidance, and how resilient it is to small delays. Only the best few plans survive and move into a deeper sandbox run.',
+        'Load factor is calculated using an economic formula: ratio = penalty_avoided / total_cost. Higher ratios mean more aggressive loading. A destination safety factor reduces loading when the destination airport approaches capacity.',
       notes: [
-        'The solver prefers moves that unlock multiple troubled flights.',
-        'Emission and handling deltas stay attached to every hop.'
+        'HUB departures are prioritized to distribute kits to spokes.',
+        'Flights are sorted by penalty exposure (passengers × distance × class factor).'
       ]
     },
     {
-      id: 'publish',
-      badge: 'Explain & monitor',
-      title: '6 · Publish the plan and watch it',
-      headline: 'A final sandbox replay stresses the plan before we ship it to operators.',
+      id: 'adapt',
+      badge: 'Adaptation',
+      title: '5 · Adapt based on penalties',
+      headline: 'We monitor penalties and adjust behavior over time.',
       description:
-        'If the replay stays inside the risk band, we send the instructions plus a short explanation card. Live monitors keep an eye on new data and can re-trigger the loop.',
+        'The adaptive engine tracks penalties over 72-hour windows. Per-airport risk scores are maintained based on overflow history. Load factors can be adjusted incrementally (±2% max per day) based on penalty patterns.',
       notes: [
-        'Failed replays go into a learning buffer so the solver avoids the same trap.',
-        'Operators receive a “why this works” summary for every hop.'
+        'High unfulfilled penalties with low overflow → increase load factor.',
+        'Overflow penalties trigger capacity protection mode.'
+      ]
+    },
+    {
+      id: 'execute',
+      badge: 'Execution',
+      title: '6 · Execute and track',
+      headline: 'We send purchase and load commands to the game server.',
+      description:
+        'The algorithm outputs two types of decisions: purchase orders (how many kits of each class to buy) and loading instructions (how many kits to load on each flight). All costs are tracked: acquisition, transport, and processing.',
+      notes: [
+        'In-flight kits are tracked until landing + processing time.',
+        'Total penalty minimization is the primary objective.'
       ]
     }
   ] satisfies CarouselSlide[],
   ro: [
     {
-      id: 'collect',
-      badge: 'Colectare date',
-      title: '1 · Colectăm semnalele kiturilor',
-      headline: 'Preluăm sănătatea IoT, programele de zbor, vremea și notițele manuale la câteva secunde.',
+      id: 'calibrate',
+      badge: 'Calibrare',
+      title: '1 · Analizăm datasetul',
+      headline: 'Parsăm fișierele CSV și calibrăm automat parametrii pentru această rețea.',
       description:
-        'Fiecare flux intră într-o coadă ca să nu pierdem valori când senzorii au oscilații. Obținem un instantaneu complet al fiecărui stand înainte să luăm decizii.',
+        'Calibratorul analizează capacitățile aeroporturilor, rutele de zbor și distanțele pentru a identifica topologia hub-spoke. Calculează praguri și load factors optimizate pentru dataset.',
       notes: [
-        'Valorile lipsă sunt completate cu ultima măsurătoare de încredere.',
-        'Echipele pot suprascrie un senzor printr-o notă rapidă în consolă.'
-      ]
-    },
-    {
-      id: 'clean',
-      badge: 'Curățare',
-      title: '2 · Curățăm și aliniem datele',
-      headline: 'Netezim curbele și aducem toate valorile pe aceeași scară.',
-      description:
-        'Mediile mobile și verificările z-score găsesc spike-urile. Convertim costuri, fusuri orare și familii de kit pentru ca solverul să vadă intrări comparabile.',
-      notes: [
-        'Dacă o valoare iese din banda sigură, o semnalăm și păstrăm ultimul punct bun.',
-        'Alertele meteo aplică o “taxă de încredere” ca solverul să știe că datele pot devia.'
+        'Topologia rețelei este detectată automat (aeroporturi hub vs spoke).',
+        'Economia rutelor (raport penalitate/cost) determină strategiile de încărcare.'
       ]
     },
     {
       id: 'forecast',
       badge: 'Prognoză cerere',
-      title: '3 · Prezicem folosirea kiturilor',
-      headline: 'Un model ușor cu atenție arată unde se va încălzi sau răci rețeaua în 72h.',
+      title: '2 · Prognozăm cererea de kituri',
+      headline: 'Estimăm cererea viitoare la fiecare aeroport folosind datele de zbor.',
       description:
-        'Combinăm schimburile istorice, zborurile active și istoricul penalităților pentru a obține o curbă de consum pe familie de kit. Curba devine harta de presiune.',
+        'Pentru zborurile cunoscute (evenimente primite), calculăm exact numărul de pasageri. Pentru zborurile viitoare, folosim programul de zbor. Cererea se calculează separat pentru fiecare clasă: First, Business, Premium Economy și Economy.',
       notes: [
-        'Timpul de aprovizionare și durata transportului devin buffere soft.',
-        'Modelul livrează atât estimarea centrală, cât și o bandă de risc.'
+        'Cerere inbound: kituri care sosesc cu zborurile.',
+        'Cerere outbound: kituri necesare pentru pasagerii care pleacă.'
       ]
     },
     {
-      id: 'constraints',
-      badge: 'Constrângeri',
-      title: '4 · Construim tabla de reguli',
-      headline: 'Reguli simple țin solverul legat de realitate.',
+      id: 'purchase',
+      badge: 'Achiziții',
+      title: '3 · Luăm decizii de achiziție',
+      headline: 'Cumpărăm kituri când stocul scade sub praguri specifice per clasă.',
       description:
-        'Blocăm aeronavele aflate în mentenanță, fixăm kiturile deja promise și marcăm depozitele pline. Vama sau interdicțiile de noapte devin ferestre de timp.',
+        'Fiecare clasă are praguri diferite (First: 10%, Business: 33%, Premium Economy: 40%, Economy: 70% din capacitate) și lead times (48h, 36h, 24h, 12h). Achizițiile se fac doar dacă kiturile vor ajunge înainte de finalul jocului.',
       notes: [
-        'Regulile pot fi editate pentru ridicarea temporară a unei limite.',
-        'Anotăm sursa fiecărei reguli pentru audit rapid.'
+        'Early-game: achiziții agresive pentru stocul inițial.',
+        'End-game: ultimul val înainte de deadline-urile lead time.'
       ]
     },
     {
-      id: 'simulate',
-      badge: 'Bucla solverului',
-      title: '5 · Simulăm planurile de schimb',
-      headline: 'Restarturi greedy + annealing simulat explorează mii de mutări.',
+      id: 'load',
+      badge: 'Încărcare zboruri',
+      title: '4 · Calculăm încărcarea optimă',
+      headline: 'Determinăm câte kituri să încărcăm pe fiecare zbor.',
       description:
-        'Punctăm fiecare plan pe cost, evitarea penalizărilor și reziliență la întârzieri mici. Doar câteva planuri trec într-o simulare mai profundă.',
+        'Load factor-ul se calculează cu o formulă economică: ratio = penalitate_evitată / cost_total. Raporturi mai mari înseamnă încărcare mai agresivă. Un factor de siguranță pentru destinație reduce încărcarea când aeroportul destinație se apropie de capacitate.',
       notes: [
-        'Solverul preferă mutările care deblochează mai multe zboruri cu probleme.',
-        'Delta de emisii și manipulare rămâne atașată fiecărui hop.'
+        'Zborurile din HUB sunt prioritizate pentru a distribui kituri către spokes.',
+        'Zborurile sunt sortate după expunerea la penalități (pasageri × distanță × factor clasă).'
       ]
     },
     {
-      id: 'publish',
-      badge: 'Explicăm și monitorizăm',
-      title: '6 · Publicăm planul și îl urmărim',
-      headline: 'O rejucare finală solicită planul înainte să ajungă la operatori.',
+      id: 'adapt',
+      badge: 'Adaptare',
+      title: '5 · Ne adaptăm pe baza penalităților',
+      headline: 'Monitorizăm penalitățile și ajustăm comportamentul în timp.',
       description:
-        'Dacă rejucarea rămâne în bara de risc, trimitem instrucțiunile plus o fișă de explicații. Monitoarele live urmăresc datele noi și pot reporni bucla.',
+        'Motorul adaptiv urmărește penalitățile pe ferestre de 72 de ore. Scoruri de risc per aeroport sunt menținute pe baza istoricului de overflow. Load factors pot fi ajustate incremental (±2% max pe zi) pe baza pattern-urilor de penalități.',
       notes: [
-        'Rejucările eșuate intră într-un buffer de învățare ca să evităm aceeași capcană.',
-        'Operatorii primesc pentru fiecare hop un rezumat “de ce funcționează”.'
+        'Penalități unfulfilled ridicate cu overflow scăzut → creștem load factor.',
+        'Penalitățile de overflow activează modul de protecție a capacității.'
+      ]
+    },
+    {
+      id: 'execute',
+      badge: 'Execuție',
+      title: '6 · Executăm și monitorizăm',
+      headline: 'Trimitem comenzi de achiziție și încărcare către server.',
+      description:
+        'Algoritmul produce două tipuri de decizii: comenzi de achiziție (câte kituri din fiecare clasă să cumpărăm) și instrucțiuni de încărcare (câte kituri să încărcăm pe fiecare zbor). Toate costurile sunt monitorizate: achiziție, transport și procesare.',
+      notes: [
+        'Kiturile în zbor sunt urmărite până la aterizare + timp de procesare.',
+        'Minimizarea penalităților totale este obiectivul principal.'
       ]
     }
   ] satisfies CarouselSlide[]
@@ -223,36 +223,36 @@ const carouselSlides = {
 const pillarCards = {
   en: [
     {
-      label: 'Confidence envelopes',
-      description: 'Range forecasts per kit family, recalibrated every 90s as telemetry lags surface.',
-      metric: '±4.2% mean absolute error'
+      label: 'Capacity protection',
+      description: 'Never exceed airport capacity limits. Overflow is the most expensive penalty at $777 per excess kit.',
+      metric: '0 overflow tolerance'
     },
     {
-      label: 'Stability window',
-      description: 'Solver only publishes if penalty risk stays below the agreed threshold for four back-to-back sims.',
-      metric: '< 0.6 penalty bursts / hour'
+      label: 'Lead time awareness',
+      description: 'Purchases are only made if kits will arrive before the 30-day game ends, respecting class-specific lead times.',
+      metric: '12h – 48h lead times'
     },
     {
-      label: 'Traceable payloads',
-      description: 'Each hop bundles emissions, handling time, and human-readable rationale for audit.',
-      metric: '~12 KB signed packet'
+      label: 'Hub-spoke balance',
+      description: 'Prioritize distributing kits from hub to spoke airports while maintaining safety buffers at all locations.',
+      metric: '1–3% safety buffer'
     }
   ] satisfies PillarCard[],
   ro: [
     {
-      label: 'Intervale de încredere',
-      description: 'Prognoze pe familie de kit, recalibrate la 90s când apar întârzieri de telemetrie.',
-      metric: '±4.2% eroare absolută medie'
+      label: 'Protecția capacității',
+      description: 'Nu depășim niciodată capacitatea aeroporturilor. Overflow-ul este cea mai scumpă penalitate: $777 per kit în exces.',
+      metric: '0 toleranță overflow'
     },
     {
-      label: 'Fereastră de stabilitate',
-      description: 'Solver-ul publică doar dacă riscul de penalizare rămâne sub prag pentru patru simulări consecutive.',
-      metric: '< 0.6 vârfuri de penalizare / oră'
+      label: 'Respectarea lead times',
+      description: 'Achizițiile se fac doar dacă kiturile vor ajunge înainte de finalul jocului de 30 de zile, respectând lead times per clasă.',
+      metric: '12h – 48h lead times'
     },
     {
-      label: 'Payload-uri trasabile',
-      description: 'Fiecare rută include emisii, timp de manipulare și raționament pentru audit.',
-      metric: '~12 KB pachet semnat'
+      label: 'Echilibru hub-spoke',
+      description: 'Prioritizăm distribuția kiturilor din hub către spoke menținând buffere de siguranță la toate locațiile.',
+      metric: '1–3% buffer siguranță'
     }
   ] satisfies PillarCard[]
 };
