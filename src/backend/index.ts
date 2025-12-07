@@ -6,6 +6,7 @@ import { calculateDynamicPurchaseConfig, calculateDynamicLoadingConfig } from '.
 import { problemLogger } from './engine/problemLogger';
 import { getAdaptiveEngine, resetAdaptiveEngine } from './engine/adaptive';
 import { resetEconomyStats, printEconomyStats } from './engine/flightLoader';
+import { NetworkCalibrator, DatasetCharacteristics } from './engine/calibrator';
 import {
   startServer,
   registerGameCallback,
@@ -270,9 +271,36 @@ async function runGame() {
   // Get fresh initial stocks for this run
   const initialStocks = getInitialStocks(airports);
 
-  // Calculate dynamic config based on HUB1 capacity
+  // ===== DATASET CALIBRATION =====
+  // Analyze dataset and calculate optimal parameters BEFORE starting game
   const hub = airports.get('HUB1');
-  const purchaseConfig = hub ? calculateDynamicPurchaseConfig(hub.capacity) : undefined;
+  let datasetCharacteristics: DatasetCharacteristics | undefined;
+
+  if (hub) {
+    console.log('\n=== DATASET CALIBRATION ===');
+    try {
+      const calibrator = new NetworkCalibrator(airports, aircraftTypes, flightPlans);
+      datasetCharacteristics = calibrator.calibrate();
+
+      // Log calibration results
+      console.log(`Network: ${datasetCharacteristics.topology.spokeCount} spokes, ${datasetCharacteristics.topology.totalFlightsPerDay.toFixed(0)} flights/day`);
+      console.log(`Avg distance: ${datasetCharacteristics.economics.avgDistance.toFixed(0)} km`);
+      console.log(`Penalty/cost ratio: ${datasetCharacteristics.economics.penaltyCostRatio.toFixed(2)}`);
+      console.log(`Calibrated economy load factor: ${datasetCharacteristics.economyLoadFactor.baseline.toFixed(2)} (range: ${datasetCharacteristics.economyLoadFactor.minFactor}-${datasetCharacteristics.economyLoadFactor.maxFactor})`);
+      console.log(`Calibrated demand estimates: FC=${datasetCharacteristics.demandEstimates.first}, BC=${datasetCharacteristics.demandEstimates.business}, PE=${datasetCharacteristics.demandEstimates.premiumEconomy}, EC=${datasetCharacteristics.demandEstimates.economy}`);
+      console.log(`Confidence: ${(datasetCharacteristics.confidence * 100).toFixed(0)}%`);
+
+      if (datasetCharacteristics.warnings.length > 0) {
+        console.log(`Warnings: ${datasetCharacteristics.warnings.join(', ')}`);
+      }
+    } catch (err) {
+      console.warn(`Calibration failed, using defaults: ${err}`);
+    }
+    console.log('===========================\n');
+  }
+
+  // Calculate dynamic config based on HUB1 capacity AND calibration
+  const purchaseConfig = hub ? calculateDynamicPurchaseConfig(hub.capacity, datasetCharacteristics) : undefined;
   const loadingConfig = hub ? calculateDynamicLoadingConfig(hub.capacity) : undefined;
 
   // Log data characteristics for debugging on new datasets
@@ -288,8 +316,8 @@ async function runGame() {
     console.log('============================\n');
   }
 
-  // Initialize game state with flight plan for demand forecasting
-  const gameState = new GameState(initialStocks, aircraftTypes, airports, flightPlans, purchaseConfig, loadingConfig);
+  // Initialize game state with flight plan for demand forecasting AND calibration
+  const gameState = new GameState(initialStocks, aircraftTypes, airports, flightPlans, purchaseConfig, loadingConfig, datasetCharacteristics);
 
   // Share game state with server
   setGameState(gameState, airports);

@@ -6,6 +6,7 @@
  * 1. Monitor penalty trends over time
  * 2. Dynamically adjust buffer percentages and safety margins
  * 3. Learn from historical performance per airport
+ * 4. Track per-class unfulfilled penalties for load factor adjustment
  */
 
 import { PerClassAmount, FlightEvent, KIT_CLASSES } from '../types';
@@ -31,6 +32,16 @@ interface AirportPerformance {
   unfulfilledCount: number;
   lastOverflowDay: number;
   riskScore: number;  // 0-1, higher = more risky
+}
+
+/**
+ * Per-class penalty tracking for load factor adjustments
+ */
+interface ClassPenaltyStats {
+  unfulfilledCount: number;
+  unfulfilledCost: number;
+  overflowCount: number;
+  overflowCost: number;
 }
 
 /**
@@ -63,6 +74,27 @@ export class AdaptiveEngine {
   // Configuration reference for updates
   private loadingConfig: LoadingConfig | null = null;
 
+  // ===== NEW: Per-class penalty tracking for load factor adjustments =====
+  private classPenaltyStats: Record<keyof PerClassAmount, ClassPenaltyStats> = {
+    first: { unfulfilledCount: 0, unfulfilledCost: 0, overflowCount: 0, overflowCost: 0 },
+    business: { unfulfilledCount: 0, unfulfilledCost: 0, overflowCount: 0, overflowCost: 0 },
+    premiumEconomy: { unfulfilledCount: 0, unfulfilledCost: 0, overflowCount: 0, overflowCost: 0 },
+    economy: { unfulfilledCount: 0, unfulfilledCost: 0, overflowCount: 0, overflowCost: 0 }
+  };
+
+  // Daily penalty snapshots for trend detection
+  private dailySnapshots: Array<{
+    day: number;
+    economyUnfulfilled: number;
+    totalOverflow: number;
+  }> = [];
+
+  // Load factor adjustment tracking
+  private loadFactorAdjustments: Record<keyof PerClassAmount, number> = {
+    first: 0, business: 0, premiumEconomy: 0, economy: 0
+  };
+  private lastAdjustmentDay = -1;
+
   /**
    * Record penalties from a round for learning
    */
@@ -91,6 +123,9 @@ export class AdaptiveEngine {
       if (record.airportCode) {
         this.updateAirportPerformance(record);
       }
+
+      // ===== NEW: Update per-class penalty stats =====
+      this.updateClassPenaltyStats(p.code, p.penalty, record.kitClass);
     }
 
     // Track round total for trend analysis
@@ -104,8 +139,56 @@ export class AdaptiveEngine {
       this.roundPenalties.shift();
     }
 
+    // ===== NEW: Take daily snapshot at midnight =====
+    if (hour === 0 && day > 0) {
+      this.takeDailySnapshot(day - 1);
+    }
+
     // Analyze and adapt
     this.analyzeAndAdapt(day, hour);
+  }
+
+  /**
+   * Update per-class penalty statistics
+   */
+  private updateClassPenaltyStats(code: string, penalty: number, kitClass?: string): void {
+    // Determine which class this penalty is for
+    let targetClass: keyof PerClassAmount | null = null;
+
+    if (kitClass) {
+      // Kit class parsed from reason
+      targetClass = kitClass as keyof PerClassAmount;
+    } else if (code.includes('ECONOMY')) {
+      targetClass = 'economy';
+    } else if (code.includes('BUSINESS')) {
+      targetClass = 'business';
+    } else if (code.includes('PREMIUM')) {
+      targetClass = 'premiumEconomy';
+    } else if (code.includes('FIRST')) {
+      targetClass = 'first';
+    }
+
+    if (!targetClass) return;
+
+    // Update stats based on penalty type
+    if (code.includes('UNFULFILLED')) {
+      this.classPenaltyStats[targetClass].unfulfilledCount++;
+      this.classPenaltyStats[targetClass].unfulfilledCost += penalty;
+    } else if (code.includes('CAPACITY') || code.includes('OVERFLOW')) {
+      this.classPenaltyStats[targetClass].overflowCount++;
+      this.classPenaltyStats[targetClass].overflowCost += penalty;
+    }
+  }
+
+  /**
+   * Take a snapshot of daily penalties for trend analysis
+   */
+  private takeDailySnapshot(day: number): void {
+    this.dailySnapshots.push({
+      day,
+      economyUnfulfilled: this.classPenaltyStats.economy.unfulfilledCost,
+      totalOverflow: Object.values(this.classPenaltyStats).reduce((sum, s) => sum + s.overflowCost, 0)
+    });
   }
 
   /**
@@ -306,6 +389,106 @@ export class AdaptiveEngine {
         ? this.average(this.roundPenalties.slice(-6))
         : 0
     };
+  }
+
+  // ===== NEW: Load factor adjustment methods =====
+
+  /**
+   * Get per-class penalty statistics
+   */
+  getClassPenaltyStats(): Record<keyof PerClassAmount, ClassPenaltyStats> {
+    return this.classPenaltyStats;
+  }
+
+  /**
+   * Get cumulative economy unfulfilled cost
+   */
+  getEconomyUnfulfilledCost(): number {
+    return this.classPenaltyStats.economy.unfulfilledCost;
+  }
+
+  /**
+   * Get total overflow cost across all classes
+   */
+  getTotalOverflowCost(): number {
+    return Object.values(this.classPenaltyStats).reduce((sum, s) => sum + s.overflowCost, 0);
+  }
+
+  /**
+   * Suggest load factor adjustment based on penalty patterns
+   * Called at start of each day (Day 3+) to potentially adjust
+   *
+   * Stability safeguards:
+   * - Only adjusts once per day
+   * - Max adjustment: +/- 2% per day
+   * - Total adjustment capped at +/- 10%
+   * - Requires 2 consecutive days of signal before adjusting
+   *
+   * @param currentDay Current game day
+   * @returns Suggested adjustment for economy class (-0.02 to +0.02)
+   */
+  suggestLoadFactorAdjustment(currentDay: number): number {
+    // Stability: Don't adjust in first 3 days (need baseline data)
+    if (currentDay < 3) return 0;
+
+    // Stability: Only adjust once per day
+    if (currentDay === this.lastAdjustmentDay) {
+      return this.loadFactorAdjustments.economy;
+    }
+
+    // Constants for adjustment logic
+    const MAX_DAILY_ADJUSTMENT = 0.02;
+    const MAX_TOTAL_ADJUSTMENT = 0.10;
+    const UNFULFILLED_THRESHOLD = 500000;  // $500K/day is "high" unfulfilled
+    const OVERFLOW_THRESHOLD = 10000;      // $10K/day is "low" overflow
+
+    // Calculate daily rates
+    const economyUnfulfilledRate = this.classPenaltyStats.economy.unfulfilledCost / currentDay;
+    const overflowRate = this.getTotalOverflowCost() / currentDay;
+
+    // Current cumulative adjustment
+    const currentAdjustment = this.loadFactorAdjustments.economy;
+
+    // Check if we've hit the limit
+    if (Math.abs(currentAdjustment) >= MAX_TOTAL_ADJUSTMENT) {
+      return currentAdjustment;
+    }
+
+    let adjustment = 0;
+
+    // If high unfulfilled AND low overflow => increase load factor
+    if (economyUnfulfilledRate > UNFULFILLED_THRESHOLD && overflowRate < OVERFLOW_THRESHOLD) {
+      adjustment = MAX_DAILY_ADJUSTMENT;  // +2%
+      console.log(`[ADAPTIVE] Day ${currentDay}: High economy unfulfilled ($${(economyUnfulfilledRate/1000).toFixed(0)}K/day), low overflow ($${(overflowRate/1000).toFixed(0)}K/day) => +${(adjustment*100).toFixed(0)}% load factor`);
+    }
+    // If high overflow => decrease load factor
+    else if (overflowRate > OVERFLOW_THRESHOLD * 5) {  // $50K/day overflow
+      adjustment = -MAX_DAILY_ADJUSTMENT;  // -2%
+      console.log(`[ADAPTIVE] Day ${currentDay}: High overflow ($${(overflowRate/1000).toFixed(0)}K/day) => ${(adjustment*100).toFixed(0)}% load factor`);
+    }
+
+    // Apply bounds
+    let newTotal = currentAdjustment + adjustment;
+    if (newTotal > MAX_TOTAL_ADJUSTMENT) {
+      adjustment = MAX_TOTAL_ADJUSTMENT - currentAdjustment;
+    } else if (newTotal < -MAX_TOTAL_ADJUSTMENT) {
+      adjustment = -MAX_TOTAL_ADJUSTMENT - currentAdjustment;
+    }
+
+    // Update state
+    if (adjustment !== 0) {
+      this.loadFactorAdjustments.economy += adjustment;
+      this.lastAdjustmentDay = currentDay;
+    }
+
+    return this.loadFactorAdjustments.economy;
+  }
+
+  /**
+   * Get current load factor adjustment for a class
+   */
+  getLoadFactorAdjustment(kitClass: keyof PerClassAmount): number {
+    return this.loadFactorAdjustments[kitClass];
   }
 
   // ==================== HELPER METHODS ====================

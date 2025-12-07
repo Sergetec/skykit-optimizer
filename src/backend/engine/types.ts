@@ -3,6 +3,7 @@
  */
 
 import { PerClassAmount } from '../types';
+import { DatasetCharacteristics } from './calibrator';
 
 // Track kits that are in-flight (loaded on a plane, not yet landed)
 export interface InFlightKits {
@@ -70,16 +71,29 @@ export interface LoadingConfig {
  * Calculate dynamic purchase config based on hub capacity
  * This ensures thresholds scale properly with different datasets
  * CRITICAL for robustness on new data!
+ *
+ * @param hubCapacity Hub airport capacity
+ * @param characteristics Optional dataset characteristics from calibration
  */
-export function calculateDynamicPurchaseConfig(hubCapacity: PerClassAmount): PurchaseConfig {
+export function calculateDynamicPurchaseConfig(
+  hubCapacity: PerClassAmount,
+  characteristics?: DatasetCharacteristics
+): PurchaseConfig {
+  // Use calibrated thresholds if available, otherwise use default percentages
+  const thresholdPercents = characteristics?.purchaseThresholdPercents ?? {
+    first: 0.10,
+    business: 0.33,
+    premiumEconomy: 0.40,
+    economy: 0.70
+  };
+
   return {
-    // Thresholds as percentage of hub capacity
-    // These percentages were tuned on current dataset but should work on others
+    // Thresholds as percentage of hub capacity (from calibration or defaults)
     thresholds: {
-      first: Math.floor(hubCapacity.first * 0.10),           // 10% of capacity
-      business: Math.floor(hubCapacity.business * 0.33),     // 33% of capacity
-      premiumEconomy: Math.floor(hubCapacity.premiumEconomy * 0.40), // 40% of capacity
-      economy: Math.floor(hubCapacity.economy * 0.70)        // 70% of capacity
+      first: Math.floor(hubCapacity.first * thresholdPercents.first),
+      business: Math.floor(hubCapacity.business * thresholdPercents.business),
+      premiumEconomy: Math.floor(hubCapacity.premiumEconomy * thresholdPercents.premiumEconomy),
+      economy: Math.floor(hubCapacity.economy * thresholdPercents.economy)
     },
     // Emergency thresholds - trigger immediate purchase
     emergencyThresholds: {

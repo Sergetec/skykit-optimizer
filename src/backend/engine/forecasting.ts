@@ -1,6 +1,11 @@
 /**
  * Demand Forecasting Module
  * Predicts future kit demand based on known flights and flight plans
+ *
+ * Enhanced with dataset-adaptive calibration:
+ * - Tracks demand statistics (mean, variance)
+ * - Can recalibrate if observed demand differs from initial estimates
+ * - Uses calibrated demand estimates when available
  */
 
 import {
@@ -9,6 +14,18 @@ import {
   FlightPlan,
   KIT_CLASSES
 } from '../types';
+import { DatasetCharacteristics } from './calibrator';
+
+/**
+ * Statistics for observed demand per class
+ */
+interface DemandStats {
+  count: number;
+  sum: PerClassAmount;
+  sumSq: PerClassAmount;  // For variance calculation
+  min: PerClassAmount;
+  max: PerClassAmount;
+}
 
 export class DemandForecaster {
   private flightPlans: FlightPlan[];
@@ -25,8 +42,30 @@ export class DemandForecaster {
   // Cached averages (updated when new observations added)
   private cachedAverages: Record<keyof PerClassAmount, number> | null = null;
 
-  constructor(flightPlans: FlightPlan[]) {
+  // Dataset characteristics for calibrated estimates
+  private characteristics: DatasetCharacteristics | null = null;
+
+  // Enhanced demand statistics
+  private demandStats: DemandStats = {
+    count: 0,
+    sum: { first: 0, business: 0, premiumEconomy: 0, economy: 0 },
+    sumSq: { first: 0, business: 0, premiumEconomy: 0, economy: 0 },
+    min: { first: Infinity, business: Infinity, premiumEconomy: Infinity, economy: Infinity },
+    max: { first: 0, business: 0, premiumEconomy: 0, economy: 0 }
+  };
+
+  constructor(flightPlans: FlightPlan[], characteristics?: DatasetCharacteristics) {
     this.flightPlans = flightPlans;
+    if (characteristics) {
+      this.characteristics = characteristics;
+    }
+  }
+
+  /**
+   * Set dataset characteristics (can be called after construction)
+   */
+  setCharacteristics(characteristics: DatasetCharacteristics): void {
+    this.characteristics = characteristics;
   }
 
   /**
@@ -35,6 +74,7 @@ export class DemandForecaster {
    * This enables adaptive learning for different datasets
    */
   recordObservedDemand(passengers: PerClassAmount): void {
+    // Update per-class observation arrays (for moving average)
     for (const kitClass of KIT_CLASSES) {
       const count = passengers[kitClass];
       if (count > 0) {
@@ -47,6 +87,97 @@ export class DemandForecaster {
     }
     // Invalidate cache
     this.cachedAverages = null;
+
+    // Update aggregate statistics (for recalibration decisions)
+    this.demandStats.count++;
+    for (const kitClass of KIT_CLASSES) {
+      const val = passengers[kitClass];
+      this.demandStats.sum[kitClass] += val;
+      this.demandStats.sumSq[kitClass] += val * val;
+      this.demandStats.min[kitClass] = Math.min(this.demandStats.min[kitClass], val);
+      this.demandStats.max[kitClass] = Math.max(this.demandStats.max[kitClass], val);
+    }
+  }
+
+  /**
+   * Get observed mean for a kit class
+   */
+  getObservedMean(kitClass: keyof PerClassAmount): number {
+    if (this.demandStats.count === 0) return 0;
+    return this.demandStats.sum[kitClass] / this.demandStats.count;
+  }
+
+  /**
+   * Get observed variance for a kit class
+   */
+  getObservedVariance(kitClass: keyof PerClassAmount): number {
+    if (this.demandStats.count < 2) return 0;
+    const mean = this.getObservedMean(kitClass);
+    const meanSq = this.demandStats.sumSq[kitClass] / this.demandStats.count;
+    return meanSq - mean * mean;
+  }
+
+  /**
+   * Get all observed statistics
+   */
+  getDemandStats(): DemandStats {
+    return this.demandStats;
+  }
+
+  /**
+   * Check if we should recalibrate based on observed vs estimated demand
+   * Returns true if observed differs from estimated by > 25%
+   */
+  shouldRecalibrate(): boolean {
+    // Need at least 50 observations for meaningful comparison
+    if (this.demandStats.count < 50) return false;
+
+    // Get initial estimates (from calibration or defaults)
+    const estimates = this.characteristics?.demandEstimates ?? {
+      first: 10, business: 50, premiumEconomy: 25, economy: 200
+    };
+
+    // Check if any class differs by more than 25%
+    for (const kitClass of KIT_CLASSES) {
+      const observed = this.getObservedMean(kitClass);
+      const estimated = estimates[kitClass];
+      if (estimated === 0) continue;
+
+      const ratio = observed / estimated;
+      if (ratio < 0.75 || ratio > 1.25) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Get updated demand estimates based on observations
+   * Blends observed data with initial estimates for stability
+   */
+  getUpdatedDemandEstimates(): PerClassAmount {
+    if (this.demandStats.count < 20) {
+      // Not enough data, use initial estimates
+      return this.characteristics?.demandEstimates ?? {
+        first: 10, business: 50, premiumEconomy: 25, economy: 200
+      };
+    }
+
+    const initial = this.characteristics?.demandEstimates ?? {
+      first: 10, business: 50, premiumEconomy: 25, economy: 200
+    };
+
+    const updated: PerClassAmount = { first: 0, business: 0, premiumEconomy: 0, economy: 0 };
+
+    for (const kitClass of KIT_CLASSES) {
+      // Use observed mean with 30% buffer for safety
+      const observed = this.getObservedMean(kitClass) * 1.3;
+      // Blend: 70% observed, 30% initial (for stability)
+      updated[kitClass] = Math.ceil(observed * 0.7 + initial[kitClass] * 0.3);
+    }
+
+    return updated;
   }
 
   /**
@@ -263,14 +394,20 @@ export class DemandForecaster {
 
   /**
    * Get typical demand estimate for a kit class
+   * Uses calibrated values if available, otherwise falls back to defaults
    */
   private getTypicalDemandEstimate(kitClass: keyof PerClassAmount): number {
-    // FIX 3.1: Reduced economy from 250 to 200 to prevent spoke overflow
+    // Use calibrated estimates if available
+    if (this.characteristics?.demandEstimates) {
+      return this.characteristics.demandEstimates[kitClass];
+    }
+
+    // Fall back to defaults (FIX 3.1: Reduced economy from 250 to 200)
     switch (kitClass) {
       case 'first': return 10;
       case 'business': return 50;
       case 'premiumEconomy': return 25;
-      case 'economy': return 200;  // Was 250
+      case 'economy': return 200;
       default: return 0;
     }
   }

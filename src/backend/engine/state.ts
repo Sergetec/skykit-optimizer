@@ -22,6 +22,7 @@ import {
   DEFAULT_PURCHASE_CONFIG,
   DEFAULT_LOADING_CONFIG
 } from './types';
+import { DatasetCharacteristics } from './calibrator';
 
 export class GameState {
   // Current time
@@ -34,6 +35,8 @@ export class GameState {
   private flightLoader: FlightLoader;
   private purchasingManager: PurchasingManager;
 
+  // Dataset characteristics from calibration
+  private characteristics: DatasetCharacteristics | undefined;
 
   // Known flights (from SCHEDULED/CHECKED_IN events)
   knownFlights: Map<string, FlightEvent> = new Map();
@@ -55,19 +58,24 @@ export class GameState {
     airports: Map<string, Airport>,
     flightPlans: FlightPlan[],
     purchaseConfig: PurchaseConfig = DEFAULT_PURCHASE_CONFIG,
-    loadingConfig: LoadingConfig = DEFAULT_LOADING_CONFIG
+    loadingConfig: LoadingConfig = DEFAULT_LOADING_CONFIG,
+    characteristics?: DatasetCharacteristics
   ) {
-    // Initialize modular components
+    // Store characteristics
+    this.characteristics = characteristics;
+
+    // Initialize modular components WITH calibration
     this.inventoryManager = new InventoryManager(initialStocks, airports);
-    this.demandForecaster = new DemandForecaster(flightPlans);
+    this.demandForecaster = new DemandForecaster(flightPlans, characteristics);
     this.flightLoader = new FlightLoader(
       this.inventoryManager,
       this.demandForecaster,
       aircraftTypes,
-      loadingConfig
+      loadingConfig,
+      characteristics  // Pass characteristics to FlightLoader
     );
     // NOTE: Economy load factor is now calculated PER-FLIGHT in calculateEconomyLoadFactorForFlight()
-    // No startup computation needed - each flight gets its own factor based on route economics
+    // The calibrated baseline and thresholds are used from characteristics
 
     this.purchasingManager = new PurchasingManager(
       this.inventoryManager,
@@ -75,6 +83,13 @@ export class GameState {
       airports.get('HUB1'),
       purchaseConfig
     );
+  }
+
+  /**
+   * Get dataset characteristics (for debugging/logging)
+   */
+  getCharacteristics(): DatasetCharacteristics | undefined {
+    return this.characteristics;
   }
 
   // ==================== TIME MANAGEMENT ====================

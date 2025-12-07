@@ -17,6 +17,7 @@ import { InventoryManager } from './inventory';
 import { DemandForecaster } from './forecasting';
 import { getAdaptiveEngine } from './adaptive';
 import { problemLogger } from './problemLogger';
+import { DatasetCharacteristics, RuntimeCalibrator } from './calibrator';
 
 // ============ ECONOMY LOADING ANALYTICS ============
 interface EconomyLoadingStats {
@@ -81,16 +82,42 @@ export class FlightLoader {
   private aircraftTypes: Map<string, Aircraft>;
   private config: LoadingConfig;
 
+  // Dataset-adaptive calibration
+  private characteristics: DatasetCharacteristics | null = null;
+  private runtimeCalibrator: RuntimeCalibrator | null = null;
+
   constructor(
     inventoryManager: InventoryManager,
     demandForecaster: DemandForecaster,
     aircraftTypes: Map<string, Aircraft>,
-    config: LoadingConfig = DEFAULT_LOADING_CONFIG
+    config: LoadingConfig = DEFAULT_LOADING_CONFIG,
+    characteristics?: DatasetCharacteristics
   ) {
     this.inventoryManager = inventoryManager;
     this.demandForecaster = demandForecaster;
     this.aircraftTypes = aircraftTypes;
     this.config = config;
+
+    // Initialize calibration if characteristics provided
+    if (characteristics) {
+      this.characteristics = characteristics;
+      this.runtimeCalibrator = new RuntimeCalibrator(characteristics);
+    }
+  }
+
+  /**
+   * Set dataset characteristics (can be called after construction)
+   */
+  setCharacteristics(characteristics: DatasetCharacteristics): void {
+    this.characteristics = characteristics;
+    this.runtimeCalibrator = new RuntimeCalibrator(characteristics);
+  }
+
+  /**
+   * Get the runtime calibrator for external updates
+   */
+  getRuntimeCalibrator(): RuntimeCalibrator | null {
+    return this.runtimeCalibrator;
   }
 
   /**
@@ -164,31 +191,46 @@ export class FlightLoader {
     // Occupancy ratio: how full is the destination? (0 = empty, 1 = full)
     const occupancyRatio = destCapacity > 0 ? destTotal / destCapacity : 1.0;
 
-    // HYBRID APPROACH: Use baseline 0.70, but reduce when destination is filling up
+    // DATASET-ADAPTIVE APPROACH: Use calibrated baseline, reduce when destination fills up
     //
-    // Baseline: 0.70 (proven to work well)
-    // Reduction: Only kick in above 60% occupancy, reduce by up to 20%
+    // Get baseline from calibration (or fall back to 0.70)
+    // Get thresholds from calibration (or fall back to 0.60/0.80)
     //
-    // - 0-60% occupancy → 0.70 (baseline, stable)
-    // - 60-80% occupancy → linear reduction from 0.70 to 0.60
-    // - 80-100% occupancy → linear reduction from 0.60 to 0.50
+    // The calibrator calculates optimal baseline from penalty/cost ratio:
+    // - Higher penalty/cost ratio => higher baseline (load more)
+    // - Lower penalty/cost ratio => lower baseline (save on costs)
     //
-    // This is dataset-agnostic because:
-    // - Baseline 0.70 is economically derived (ratio ~ 1.0 means load most)
-    // - Reduction only happens when capacity data shows danger
-    let loadFactor = 0.70;  // Baseline - 0.72 tested, reduced unfulfilled by $6.5M but increased costs equally
+    // Runtime calibrator can adjust baseline based on observed penalties
+    const calibratedConfig = this.characteristics?.economyLoadFactor;
+    const runtimeAdjustment = this.runtimeCalibrator?.getCumulativeAdjustment() ?? 0;
 
-    if (occupancyRatio > 0.80) {
+    // Get baseline: calibrated + runtime adjustment, or default 0.70
+    const baseline = calibratedConfig
+      ? Math.min(calibratedConfig.maxFactor, Math.max(calibratedConfig.minFactor,
+          calibratedConfig.baseline + runtimeAdjustment))
+      : 0.70;
+
+    // Get thresholds from calibration or use defaults
+    const warningThreshold = calibratedConfig?.warningThreshold ?? 0.60;
+    const dangerThreshold = calibratedConfig?.dangerThreshold ?? 0.80;
+    const minFactor = calibratedConfig?.minFactor ?? 0.50;
+
+    let loadFactor = baseline;
+
+    if (occupancyRatio > dangerThreshold) {
       // Danger zone: reduce more aggressively
-      loadFactor = 0.60 - 0.10 * ((occupancyRatio - 0.80) / 0.20);
-    } else if (occupancyRatio > 0.60) {
-      // Warning zone: gentle reduction
-      loadFactor = 0.70 - 0.10 * ((occupancyRatio - 0.60) / 0.20);
+      // From baseline-0.10 down to minFactor
+      const dangerProgress = (occupancyRatio - dangerThreshold) / (1.0 - dangerThreshold);
+      loadFactor = (baseline - 0.10) - (baseline - 0.10 - minFactor) * dangerProgress;
+    } else if (occupancyRatio > warningThreshold) {
+      // Warning zone: gentle reduction from baseline to baseline-0.10
+      const warningProgress = (occupancyRatio - warningThreshold) / (dangerThreshold - warningThreshold);
+      loadFactor = baseline - 0.10 * warningProgress;
     }
-    // else: occupancy <= 60%, use baseline 0.70
+    // else: occupancy <= warningThreshold, use full baseline
 
-    // Bounds: 50% minimum (avoid starvation), 70% max (baseline)
-    return Math.max(0.50, Math.min(0.70, loadFactor));
+    // Bounds: minFactor minimum (avoid starvation), baseline max
+    return Math.max(minFactor, Math.min(baseline, loadFactor));
   }
 
   /**
@@ -443,19 +485,20 @@ export class FlightLoader {
       // Don't use processingKits - server adds landed kits to stock immediately!
       const destTotal = destStock[kitClass] + destInFlight;
 
-      // FIX 15+18: Dynamic buffer using AdaptiveEngine
+      // FIX 15+18: Dynamic buffer using AdaptiveEngine AND calibrated values
       // Base buffers per class, then adjusted by adaptive learning
+      // Calibrated buffers adapt to dataset characteristics (spoke capacity ratios)
+      const calibratedBuffers = this.characteristics?.destinationBuffers;
       let baseBuffer: number;
       if (flight.destinationAirport === 'HUB1') {
-        baseBuffer = 0.95;  // HUB1 can handle more
+        baseBuffer = calibratedBuffers?.hub ?? 0.95;  // HUB1 can handle more
       } else if (kitClass === 'economy') {
-        // Economy uses 70% buffer - the load factor calculation provides additional
-        // occupancy-based adjustment, but this buffer is the hard safety cap
-        baseBuffer = 0.70;
+        // Economy buffer from calibration - adapts to network capacity ratios
+        baseBuffer = calibratedBuffers?.economy ?? 0.70;
       } else if (kitClass === 'premiumEconomy') {
-        baseBuffer = 0.80;  // 80% for PE
+        baseBuffer = calibratedBuffers?.premiumEconomy ?? 0.80;
       } else {
-        baseBuffer = 0.85;  // 85% for First/Business
+        baseBuffer = calibratedBuffers?.firstBusiness ?? 0.85;
       }
 
       // FIX 18: Apply adaptive adjustment based on learned patterns
